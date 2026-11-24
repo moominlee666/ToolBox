@@ -707,13 +707,13 @@
         <div class="tool-page" id="pdf-edit-page" hidden>
           <section class="intro">
             <h1>PDF 文字編輯</h1>
-            <p>選擇可選取文字的 PDF，點選預覽中的一行文字進行修改。檔案只在瀏覽器本機處理。</p>
+            <p>選擇可選取文字的 PDF，點選預覽中的文字區段進行修改。檔案只在瀏覽器本機處理。</p>
           </section>
           <section class="panel" aria-labelledby="edit-title">
             <div class="panel-heading">
               <div>
                 <div class="panel-title" id="edit-title">編輯 PDF</div>
-                <div class="panel-caption">每次修改一行；不支援掃描圖片或直排文字</div>
+                <div class="panel-caption">每次修改一個文字區段；不支援掃描圖片或直排文字</div>
               </div>
             </div>
             <div class="edit-body">
@@ -731,7 +731,7 @@
                 <span class="edit-highlight" id="edit-highlight" hidden></span>
               </div>
               <div class="md5-label">選取的原文字
-                <pre class="edit-original" id="edit-original">點選預覽中的一行文字</pre>
+                <pre class="edit-original" id="edit-original">點選預覽中的文字區段</pre>
               </div>
               <label class="md5-label" for="edit-replacement">新文字
                 <input class="md5-field" id="edit-replacement" type="text" disabled>
@@ -746,7 +746,7 @@
               <p class="pdf-message" id="edit-message" role="status" aria-live="polite"></p>
             </div>
           </section>
-          <footer><strong>提醒：</strong>修改會移除所選行的原文字，並以其他字型重新寫入；可能影響重疊的圖形、圖片與註解。請保留原始檔並檢查下載結果。</footer>
+          <footer><strong>提醒：</strong>修改會移除所選區段的原文字，並以其他字型重新寫入；可能影響重疊的圖形、圖片與註解。請保留原始檔並檢查下載結果。</footer>
         </div>
       </div>
     </div>

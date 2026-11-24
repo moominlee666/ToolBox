@@ -1,6 +1,26 @@
 import { PDFDocument } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 
+export function selectionAt(layout, character) {
+  const line = layout.lineAt(character);
+  if (!line) return null;
+  const segments = layout.segments(line);
+  if (segments.length === 1) return line;
+  if (!layout.charQuad(character)) return null;
+
+  let start = character;
+  let end = character + 1;
+  while (start > line.start && layout.segments({ start: start - 1, count: end - start + 1 }).length === 1) {
+    start--;
+  }
+  while (end < line.start + line.count && layout.segments({ start, count: end - start + 1 }).length === 1) {
+    end++;
+  }
+  while (start < character && !layout.charQuad(start)) start++;
+  while (end > character + 1 && !layout.charQuad(end - 1)) end--;
+  return { start, count: end - start };
+}
+
 export async function prepareFont(engine, bytes) {
   const fontDocument = await PDFDocument.create();
   fontDocument.registerFontkit(fontkit);
@@ -22,13 +42,13 @@ export async function replaceLine(engine, bytes, pageIndex, selection, replaceme
     if (!pageInfo) throw new Error('找不到所選頁面。');
     const page = doc.page(pageInfo.ref);
     const layout = await page.text.layout();
-    const line = layout.lineAt(selection.start);
-    if (!line || line.start !== selection.start || line.count !== selection.count) {
+    const range = selectionAt(layout, selection.start);
+    if (!range || range.start !== selection.start || range.count !== selection.count) {
       throw new Error('所選文字已改變，請重新選取。');
     }
-    const text = await page.text.slice(line);
+    const text = await page.text.slice(range);
     if (text !== selection.text) throw new Error('所選文字已改變，請重新選取。');
-    const segments = layout.segments(line);
+    const segments = layout.segments(range);
     if (segments.length !== 1 || segments[0].advance !== 1) {
       throw new Error('此段文字的方向或排版目前不支援編輯。');
     }
