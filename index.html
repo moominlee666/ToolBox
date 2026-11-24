@@ -227,11 +227,11 @@
     .json-literal { color: #7e22a8; }
     .safe-note { color: #43835e; }
 
-    .aes-body { padding: 18px; }
-    .aes-fields { display: grid; gap: 16px; }
-    .aes-label { display: grid; gap: 8px; color: #435066; font-size: 12px; font-weight: 700; }
+    .aes-body, .md5-body { padding: 18px; }
+    .aes-fields, .md5-fields { display: grid; gap: 16px; }
+    .aes-label, .md5-label { display: grid; gap: 8px; color: #435066; font-size: 12px; font-weight: 700; }
     .aes-encoding-row { display: grid; grid-template-columns: minmax(0, 1fr) 100px; gap: 8px; }
-    .aes-field {
+    .aes-field, .md5-field {
       width: 100%;
       min-width: 0;
       min-height: 39px;
@@ -243,11 +243,53 @@
       font: inherit;
     }
     .aes-body textarea { min-height: 180px; }
-    .aes-help { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+    .md5-body textarea { min-height: 140px; }
+    .md5-body #md5-compare { min-height: 90px; }
+    .md5-results { display: grid; gap: 18px; }
+    .md5-results .result-panel { min-height: 135px; }
+    .md5-fields[hidden], .md5-label[hidden], .md5-results .result-panel[hidden] { display: none; }
+    .md5-results .output { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .md5-comparison { padding: 16px 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .md5-comparison.match { color: #28734e; }
+    .md5-comparison.mismatch { color: #b13d38; }
+    .md5-differences { padding: 0 18px 18px; }
+    .md5-differences[hidden], .md5-diff-blocks[hidden] { display: none; }
+    .md5-diff-info { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .md5-diff-label { margin: 12px 0 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .md5-diff-output { max-height: 220px; margin: 0; overflow: auto; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .diff-removed { color: #8d2924; background: #ffdbd9; }
+    .diff-added { color: #1d603b; background: #cdeed9; }
     .aes-actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .button-primary { border-color: #4263eb; color: #fff; background: #4263eb; }
     .button-primary:hover { border-color: #3451d1; background: #3451d1; }
     .button:disabled { cursor: not-allowed; opacity: .6; }
+
+    .pdf-body { display: grid; gap: 20px; padding: 18px; }
+    .pdf-section { display: grid; gap: 8px; }
+    .pdf-label, .pdf-options legend { color: #435066; font-size: 13px; font-weight: 700; }
+    .pdf-hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .pdf-upload {
+      display: grid; min-height: 105px; place-content: center; gap: 8px; padding: 14px;
+      border: 1px dashed #a8b7ce; border-radius: 9px; background: #fbfcfe;
+      color: #53647b; text-align: center; cursor: pointer; overflow-wrap: anywhere;
+    }
+    .pdf-upload:hover, .pdf-upload.dragging, .pdf-upload.has-file { border-color: #8097f2; background: #f0f3ff; }
+    #pdf-file { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .pdf-upload:has(+ #pdf-file:focus-visible) { outline: 2px solid #4263eb; outline-offset: 3px; }
+    .pdf-options { display: grid; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; }
+    .pdf-layouts { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pdf-layout { display: grid; justify-items: center; gap: 6px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px; cursor: pointer; }
+    .pdf-layout:has(input:checked) { border-color: #8097f2; background: #f0f3ff; }
+    .pdf-layout svg { width: 76px; height: 88px; }
+    .pdf-opacity { display: flex; justify-content: space-between; gap: 10px; }
+    .pdf-options input[type="range"] { width: 100%; accent-color: #4263eb; }
+    .pdf-password { display: flex; gap: 8px; }
+    .pdf-message { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
+    .pdf-message:empty { display: none; }
+    [data-theme="dark"] .pdf-label, [data-theme="dark"] .pdf-options legend { color: #d7e1ee; }
+    [data-theme="dark"] .pdf-upload { color: #c3d0e0; background: #141d29; }
+    [data-theme="dark"] .pdf-upload:hover, [data-theme="dark"] .pdf-upload.dragging,
+    [data-theme="dark"] .pdf-upload.has-file, [data-theme="dark"] .pdf-layout:has(input:checked) { background: #29385a; }
 
     footer { margin-top: 20px; color: var(--muted); font-size: 12px; line-height: 1.7; }
     footer strong { color: #59677b; }
@@ -282,8 +324,12 @@
     [data-theme="dark"] .tool-link { color: #b7c4d6; }
     [data-theme="dark"] .tool-link:hover { background: #263345; }
     [data-theme="dark"] .tool-link[aria-current="page"] { color: #c3d0ff; background: #29385a; }
-    [data-theme="dark"] .aes-label { color: #d7e1ee; }
-    [data-theme="dark"] .aes-field { color: #c3d0e0; background: #141d29; }
+    [data-theme="dark"] .aes-label, [data-theme="dark"] .md5-label { color: #d7e1ee; }
+    [data-theme="dark"] .aes-field, [data-theme="dark"] .md5-field { color: #c3d0e0; background: #141d29; }
+    [data-theme="dark"] .md5-comparison.match { color: #a5e0bb; }
+    [data-theme="dark"] .md5-comparison.mismatch { color: #ff9a94; }
+    [data-theme="dark"] .diff-removed { color: #ffd9d6; background: #773832; }
+    [data-theme="dark"] .diff-added { color: #d3ffe1; background: #275b3c; }
     [data-theme="dark"] .button-primary { border-color: #687fea; color: #fff; background: #425bc2; }
     [data-theme="dark"] .button-primary:hover { background: #526bcf; }
 
@@ -342,6 +388,12 @@
             <span class="tool-link-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/></svg>
             </span>AES 加解密
+          </a>
+          <a class="tool-link" href="#md5" data-page="md5">
+            <span class="tool-link-icon" aria-hidden="true">#</span>MD5 Hash
+          </a>
+          <a class="tool-link" href="#pdf" data-page="pdf">
+            <span class="tool-link-icon" aria-hidden="true">▤</span>PDF 保護
           </a>
         </nav>
       </aside>
@@ -451,13 +503,9 @@
                   </label>
                   <label class="aes-label" for="aes-padding">Padding
                     <select class="aes-field" id="aes-padding">
-                      <option value="pkcs7">PKCS#7</option><option value="none">None（不填充）</option><option value="dotnet">.NET 相容（加密 PKCS#7／解密 None）</option>
+                      <option value="pkcs7">PKCS#7</option><option value="none">None（不填充）</option><option value="dotnet">JDB 相容（加密 PKCS#7／解密 None）</option>
                     </select>
                   </label>
-                  <p class="aes-help">KEY 須為 16、24 或 32 bytes，IV 須為 16 bytes，以編碼後的長度計算。</p>
-                  <p class="aes-help">Base64 與 Base64URL 密文皆可直接解密；選擇 Base64URL 時，加密結果不含尾端的 =。</p>
-                  <p class="aes-help">None 不會新增或移除填充；加密時明文的 UTF-8 位元組長度必須是 16 的倍數。</p>
-                  <p class="aes-help">.NET 相容模式使用 PKCS#7 加密、None 解密；解密結果會保留填充字元。</p>
                   <div class="aes-actions">
                     <button class="button button-primary" id="aes-encrypt" type="button">加密</button>
                     <button class="button" id="aes-decrypt" type="button">解密</button>
@@ -479,12 +527,180 @@
           </section>
           <footer><strong>安全提醒：</strong>加密時應使用每次全新且不可預測的 IV。CBC 不提供完整性驗證，無法保證密文未被修改或 KEY／IV 正確；新系統建議使用具驗證功能的加密模式。</footer>
         </div>
+        <div class="tool-page" id="md5-page" hidden>
+          <section class="intro">
+            <h1>MD5 Hash</h1>
+            <p>依序串接 Agent ID、Request Data 和 Agent Secret，並比對原始字串。</p>
+          </section>
+          <section class="workspace" aria-label="MD5 Hash 工具">
+            <section class="panel" aria-labelledby="md5-input-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="md5-input-title">輸入資料</div>
+                  <div class="panel-caption">內容會以 UTF-8 原樣處理，不自動整理 JSON</div>
+                </div>
+              </div>
+              <div class="md5-body">
+                <div class="md5-fields">
+                  <label class="md5-label" for="md5-mode">使用方式
+                    <select class="md5-field" id="md5-mode">
+                      <option value="hash">自動串接並計算 MD5</option>
+                      <option value="compare">純字串比對</option>
+                    </select>
+                  </label>
+                  <div class="md5-fields" id="md5-hash-inputs">
+                    <label class="md5-label" for="md5-agent-id">Agent ID（選填）
+                      <input class="md5-field" id="md5-agent-id" type="text" autocomplete="off" spellcheck="false">
+                    </label>
+                    <label class="md5-label" for="md5-data">Request Data JSON String
+                      <textarea id="md5-data" placeholder="貼上 request data 字串" spellcheck="false"></textarea>
+                    </label>
+                    <label class="md5-label" for="md5-secret">Agent Secret（選填）
+                      <input class="md5-field" id="md5-secret" type="text" autocomplete="off" spellcheck="false">
+                    </label>
+                  </div>
+                  <label class="md5-label" id="md5-manual-field" for="md5-manual-source" hidden>Hash 前字串
+                    <textarea id="md5-manual-source" placeholder="輸入要比對的原始字串" spellcheck="false"></textarea>
+                  </label>
+                  <label class="md5-label" for="md5-compare">比對字串（選填）
+                    <textarea id="md5-compare" placeholder="輸入要與 Hash 前字串比對的內容" spellcheck="false"></textarea>
+                  </label>
+                  <p class="error" id="md5-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+            </section>
+            <div class="md5-results">
+              <section class="panel result-panel" aria-labelledby="md5-source-title">
+                <div class="panel-heading">
+                  <div>
+                    <div class="panel-title" id="md5-source-title">Hash 前字串</div>
+                    <div class="panel-caption" id="md5-source-caption">Agent ID + Request Data + Agent Secret</div>
+                  </div>
+                  <button class="button" type="button" data-md5-copy="md5-source" disabled>複製</button>
+                </div>
+                <pre class="output empty" id="md5-source">輸入 Request Data 後顯示</pre>
+              </section>
+              <section class="panel result-panel" id="md5-hash-panel" aria-labelledby="md5-hash-title">
+                <div class="panel-heading">
+                  <div>
+                    <div class="panel-title" id="md5-hash-title">MD5 Hash</div>
+                    <div class="panel-caption">UTF-8 · 32 位小寫 Hex</div>
+                  </div>
+                  <button class="button" type="button" data-md5-copy="md5-hash" disabled>複製</button>
+                </div>
+                <pre class="output empty" id="md5-hash">輸入 Request Data 後顯示</pre>
+              </section>
+              <section class="panel" aria-labelledby="md5-compare-title">
+                <div class="panel-heading"><div class="panel-title" id="md5-compare-title">比對結果</div></div>
+                <div class="md5-comparison" id="md5-comparison" role="status" aria-live="polite">輸入比對字串後顯示結果</div>
+                <div class="md5-differences" id="md5-differences" hidden>
+                  <p class="md5-diff-info" id="md5-first-difference"></p>
+                  <div class="md5-diff-blocks" id="md5-diff-blocks" hidden>
+                    <p class="md5-diff-info">差異中的空白顯示為 ·，換行顯示為 ↵，Tab 顯示為 →。</p>
+                    <div class="md5-diff-label">Hash 前字串（紅色為不同內容）</div>
+                    <pre class="md5-diff-output" id="md5-diff-source"></pre>
+                    <div class="md5-diff-label">比對字串（綠色為不同內容）</div>
+                    <pre class="md5-diff-output" id="md5-diff-comparison"></pre>
+                  </div>
+                  <p class="md5-diff-info" id="md5-diff-limit" hidden>差異過多或比對逾時，僅顯示第一處差異。</p>
+                </div>
+              </section>
+            </div>
+          </section>
+          <footer><strong>提醒：</strong>Hash 前字串包含輸入的 Agent Secret，複製或分享前請注意。MD5 不適合用於新系統的安全驗證或密碼儲存。</footer>
+        </div>
+        <div class="tool-page" id="pdf-page" hidden>
+          <section class="intro">
+            <h1>PDF 保護</h1>
+            <p>為 PDF 加上浮水印或設定開啟密碼，檔案與密碼只在瀏覽器本機處理。</p>
+          </section>
+          <section class="panel" aria-labelledby="pdf-title">
+            <div class="panel-heading">
+              <div>
+                <div class="panel-title" id="pdf-title">保護 PDF</div>
+                <div class="panel-caption">可一次選擇多個檔案，套用相同設定</div>
+              </div>
+            </div>
+            <form class="pdf-body" id="protect-form" novalidate>
+              <div class="pdf-section">
+                <label class="pdf-label" for="pdf-file">選擇 PDF 檔案（可多選）</label>
+                <label class="pdf-upload" id="upload-zone" for="pdf-file">
+                  <strong id="file-name">點擊選擇或拖曳多個 PDF 至此</strong>
+                  <span class="pdf-hint">支援 .pdf 檔案</span>
+                </label>
+                <input id="pdf-file" type="file" accept=".pdf,application/pdf" multiple required>
+              </div>
+              <div class="pdf-section">
+                <label class="pdf-label" for="watermark">浮水印文字（選填）</label>
+                <input class="md5-field" id="watermark" type="text" placeholder="例如：僅供內部使用" maxlength="100">
+                <p class="pdf-hint">輸入的文字會加到每一頁。</p>
+              </div>
+              <fieldset class="pdf-options" id="watermark-options">
+                <legend>浮水印樣式</legend>
+                <div class="pdf-layouts">
+                  <label class="pdf-layout">
+                    <svg viewBox="0 0 96 110" aria-hidden="true">
+                      <rect x="10" y="5" width="76" height="100" rx="4" fill="#fff" stroke="#dce6de"/>
+                      <path d="M20 24h48M20 32h55M20 40h45M20 68h52M20 76h45M20 84h55" stroke="#e9efea" stroke-width="2"/>
+                      <text x="48" y="59" text-anchor="middle" transform="rotate(-35 48 55)" fill="#80a88b" font-size="12" font-weight="700">浮水印</text>
+                    </svg>
+                    <span><input type="radio" name="watermark-layout" value="center" checked> 中央一個</span>
+                  </label>
+                  <label class="pdf-layout">
+                    <svg viewBox="0 0 96 110" aria-hidden="true">
+                      <rect x="10" y="5" width="76" height="100" rx="4" fill="#fff" stroke="#dce6de"/>
+                      <path d="M20 24h48M20 32h55M20 40h45M20 68h52M20 76h45M20 84h55" stroke="#e9efea" stroke-width="2"/>
+                      <g fill="#80a88b" font-size="8" font-weight="700" text-anchor="middle">
+                        <text x="48" y="27" transform="rotate(-35 48 27)">浮水印</text>
+                        <text x="48" y="57" transform="rotate(-35 48 57)">浮水印</text>
+                        <text x="48" y="87" transform="rotate(-35 48 87)">浮水印</text>
+                      </g>
+                    </svg>
+                    <span><input type="radio" name="watermark-layout" value="vertical"> 直列三個</span>
+                  </label>
+                  <label class="pdf-layout">
+                    <svg viewBox="0 0 96 110" aria-hidden="true">
+                      <rect x="10" y="5" width="76" height="100" rx="4" fill="#fff" stroke="#dce6de"/>
+                      <path d="M20 24h48M20 32h55M20 40h45M20 68h52M20 76h45M20 84h55" stroke="#e9efea" stroke-width="2"/>
+                      <g fill="#80a88b" font-size="5.5" font-weight="700" text-anchor="middle">
+                        <text x="23" y="24" transform="rotate(-35 23 24)">浮水印</text><text x="48" y="24" transform="rotate(-35 48 24)">浮水印</text><text x="73" y="24" transform="rotate(-35 73 24)">浮水印</text>
+                        <text x="23" y="45" transform="rotate(-35 23 45)">浮水印</text><text x="48" y="45" transform="rotate(-35 48 45)">浮水印</text><text x="73" y="45" transform="rotate(-35 73 45)">浮水印</text>
+                        <text x="23" y="66" transform="rotate(-35 23 66)">浮水印</text><text x="48" y="66" transform="rotate(-35 48 66)">浮水印</text><text x="73" y="66" transform="rotate(-35 73 66)">浮水印</text>
+                        <text x="23" y="87" transform="rotate(-35 23 87)">浮水印</text><text x="48" y="87" transform="rotate(-35 48 87)">浮水印</text><text x="73" y="87" transform="rotate(-35 73 87)">浮水印</text>
+                      </g>
+                    </svg>
+                    <span><input type="radio" name="watermark-layout" value="tiled"> 多個分散</span>
+                  </label>
+                </div>
+                <div class="pdf-opacity">
+                  <label class="pdf-label" for="watermark-opacity">浮水印深淺</label>
+                  <output class="pdf-hint" id="opacity-value" for="watermark-opacity">28%</output>
+                </div>
+                <input id="watermark-opacity" type="range" min="5" max="100" value="28">
+              </fieldset>
+              <div class="pdf-section">
+                <label class="pdf-label" for="password">開啟密碼（選填）</label>
+                <div class="pdf-password">
+                  <input class="md5-field" id="password" type="password" placeholder="輸入 PDF 開啟密碼" autocomplete="new-password">
+                  <button class="button" type="button" id="toggle-password" aria-label="顯示密碼" aria-pressed="false">顯示</button>
+                </div>
+                <p class="pdf-hint">需至少設定浮水印或開啟密碼其中一項。</p>
+              </div>
+              <p id="message" class="pdf-message" role="status" aria-live="polite"></p>
+              <button class="button button-primary" type="submit" id="submit-button"><span>處理並下載 PDF</span></button>
+            </form>
+          </section>
+          <footer><strong>提醒：</strong>浮水印可被移除或複製，並非安全保護；ZIP 本身不加密。已加密的 PDF 請先解除密碼。</footer>
+        </div>
       </div>
     </div>
   </main>
 
   <script src="vendor/aes-cbc.js"></script>
   <script src="aes-crypto.js"></script>
+  <script src="vendor/md5-hash.js"></script>
+  <script src="vendor/md5-diff.js?v=2"></script>
+  <script type="module" src="pdf-lock/assets/pdf-lock.js" onerror="document.getElementById('message').textContent = location.protocol === 'file:' ? 'PDF 保護請透過 HTTPS 或 localhost 開啟，無法直接從檔案使用。' : 'PDF 工具程式載入失敗，請確認網站檔案完整。'; document.getElementById('submit-button').disabled = true"></script>
   <script>
     const input = document.getElementById("log-input");
     const formattedOutput = document.getElementById("formatted-output");
@@ -495,7 +711,8 @@
     const themeStatus = document.getElementById("theme-status");
 
     function showPage() {
-      const page = window.location.hash === "#aes" ? "aes" : "log";
+      const requestedPage = window.location.hash.slice(1);
+      const page = ["log", "aes", "md5", "pdf"].includes(requestedPage) ? requestedPage : "log";
       document.querySelectorAll(".tool-page").forEach((section) => {
         section.hidden = section.id !== page + "-page";
       });
@@ -841,6 +1058,153 @@
       } catch (error) {
         aesError.textContent = "無法複製，請手動選取內容複製。";
       }
+    });
+
+    const md5Mode = document.getElementById("md5-mode");
+    const md5HashInputs = document.getElementById("md5-hash-inputs");
+    const md5ManualField = document.getElementById("md5-manual-field");
+    const md5ManualSource = document.getElementById("md5-manual-source");
+    const md5HashPanel = document.getElementById("md5-hash-panel");
+    const md5SourceCaption = document.getElementById("md5-source-caption");
+    const md5AgentId = document.getElementById("md5-agent-id");
+    const md5Data = document.getElementById("md5-data");
+    const md5Secret = document.getElementById("md5-secret");
+    const md5Compare = document.getElementById("md5-compare");
+    const md5Source = document.getElementById("md5-source");
+    const md5Hash = document.getElementById("md5-hash");
+    const md5Comparison = document.getElementById("md5-comparison");
+    const md5Error = document.getElementById("md5-error");
+    const md5CopyButtons = document.querySelectorAll("[data-md5-copy]");
+    const md5Differences = document.getElementById("md5-differences");
+    const md5FirstDifference = document.getElementById("md5-first-difference");
+    const md5DiffBlocks = document.getElementById("md5-diff-blocks");
+    const md5DiffSource = document.getElementById("md5-diff-source");
+    const md5DiffComparison = document.getElementById("md5-diff-comparison");
+    const md5DiffLimit = document.getElementById("md5-diff-limit");
+    let md5ManualTouched = false;
+    let md5CompareTouched = false;
+    let md5SourceValue = "";
+
+    function describeDiffChar(char) {
+      if (char === null) return "結尾";
+      if (char === " ") return "空白";
+      if (char === "\n") return "換行";
+      if (char === "\t") return "Tab";
+      return JSON.stringify(char);
+    }
+
+    function renderDiff(changes, element, side) {
+      const content = document.createDocumentFragment();
+      changes.forEach((change) => {
+        if ((side === "source" && change.added) || (side === "comparison" && change.removed)) return;
+        if (change.added || change.removed) {
+          const mark = document.createElement("mark");
+          mark.className = change.removed ? "diff-removed" : "diff-added";
+          mark.textContent = change.value.replace(/ /g, "·").replace(/\t/g, "→").replace(/\n/g, "↵\n");
+          content.appendChild(mark);
+        } else {
+          content.appendChild(document.createTextNode(change.value));
+        }
+      });
+      element.replaceChildren(content);
+    }
+
+    function updateMd5() {
+      const manual = md5Mode.value === "compare";
+      md5HashInputs.hidden = manual;
+      md5ManualField.hidden = !manual;
+      md5HashPanel.hidden = manual;
+      md5SourceCaption.textContent = manual ? "自行輸入的原始字串" : "Agent ID + Request Data + Agent Secret";
+      md5Error.textContent = "";
+      md5Comparison.textContent = "輸入比對字串後顯示結果";
+      md5Comparison.classList.remove("match", "mismatch");
+      md5Differences.hidden = true;
+      md5DiffBlocks.hidden = true;
+      md5DiffLimit.hidden = true;
+      md5DiffSource.replaceChildren();
+      md5DiffComparison.replaceChildren();
+      md5SourceValue = "";
+      md5Source.textContent = manual ? "輸入原始字串後顯示" : "輸入 Request Data 後顯示";
+      md5Hash.textContent = "輸入 Request Data 後顯示";
+      md5Source.classList.add("empty");
+      md5Hash.classList.add("empty");
+      md5CopyButtons.forEach((button) => { button.disabled = true; });
+      if (manual) {
+        if (!md5ManualTouched && !md5CompareTouched && !md5ManualSource.value && !md5Compare.value) return;
+      } else if (md5Data.value.length === 0) {
+        return;
+      }
+
+      try {
+        const source = manual ? md5ManualSource.value : md5AgentId.value + md5Data.value + md5Secret.value;
+        if (!manual) {
+          if (typeof window.lumatekMd5 !== "function") {
+            throw new Error("MD5 工具程式載入失敗，請確認網站檔案完整。");
+          }
+          setOutput(md5Hash, window.lumatekMd5(source));
+          document.querySelector('[data-md5-copy="md5-hash"]').disabled = false;
+        }
+        md5SourceValue = source;
+        setOutput(md5Source, source === "" ? "（空字串）" : source);
+        document.querySelector('[data-md5-copy="md5-source"]').disabled = false;
+        if (md5Compare.value.length > 0 || (manual && md5CompareTouched)) {
+          const matches = md5Compare.value === source;
+          md5Comparison.textContent = matches ? "字串完全相同" : "字串不相同";
+          md5Comparison.classList.add(matches ? "match" : "mismatch");
+          if (!matches) {
+            if (typeof window.lumatekCompareStrings !== "function") {
+              throw new Error("差異比對程式載入失敗，請確認網站檔案完整。");
+            }
+            const diff = window.lumatekCompareStrings(source, md5Compare.value);
+            md5FirstDifference.textContent = `第一處差異：第 ${diff.line} 行，第 ${diff.column} 個字元（Hash 前：${describeDiffChar(diff.sourceChar)}；比對字串：${describeDiffChar(diff.comparisonChar)}）`;
+            md5Differences.hidden = false;
+            if (diff.changes) {
+              renderDiff(diff.changes, md5DiffSource, "source");
+              renderDiff(diff.changes, md5DiffComparison, "comparison");
+              md5DiffBlocks.hidden = false;
+            } else {
+              md5DiffLimit.hidden = false;
+            }
+          }
+        }
+      } catch (error) {
+        md5Error.textContent = error instanceof Error ? error.message : "處理失敗。";
+      }
+    }
+
+    [md5Mode, md5AgentId, md5Data, md5Secret].forEach((field) => {
+      field.addEventListener("input", updateMd5);
+    });
+    md5ManualSource.addEventListener("input", () => {
+      md5ManualTouched = true;
+      updateMd5();
+    });
+    md5ManualSource.addEventListener("blur", () => {
+      md5ManualTouched = true;
+      updateMd5();
+    });
+    md5Compare.addEventListener("input", () => {
+      md5CompareTouched = true;
+      updateMd5();
+    });
+    md5Compare.addEventListener("blur", () => {
+      md5CompareTouched = true;
+      updateMd5();
+    });
+
+    md5CopyButtons.forEach((button) => {
+      button.addEventListener("click", async () => {
+        try {
+          const text = button.dataset.md5Copy === "md5-source"
+            ? md5SourceValue
+            : document.getElementById(button.dataset.md5Copy).textContent;
+          await copyText(text);
+          button.textContent = "已複製";
+          window.setTimeout(() => { button.textContent = "複製"; }, 1400);
+        } catch (error) {
+          md5Error.textContent = "無法複製，請手動選取內容複製。";
+        }
+      });
     });
 
     copyButtons.forEach((button) => {
