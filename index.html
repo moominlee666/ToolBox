@@ -227,12 +227,13 @@
     .json-literal { color: #7e22a8; }
     .safe-note { color: #43835e; }
 
-    .coming-soon { display: inline-flex; padding: 5px 9px; border-radius: 999px; color: #796028; background: #fff6db; font-size: 11px; font-weight: 700; }
     .aes-body { padding: 18px; }
-    .aes-body fieldset { display: grid; gap: 16px; margin: 0; padding: 0; border: 0; min-width: 0; }
+    .aes-fields { display: grid; gap: 16px; }
     .aes-label { display: grid; gap: 8px; color: #435066; font-size: 12px; font-weight: 700; }
+    .aes-encoding-row { display: grid; grid-template-columns: minmax(0, 1fr) 100px; gap: 8px; }
     .aes-field {
       width: 100%;
+      min-width: 0;
       min-height: 39px;
       padding: 10px 12px;
       border: 1px solid var(--line);
@@ -242,6 +243,10 @@
       font: inherit;
     }
     .aes-body textarea { min-height: 180px; }
+    .aes-help { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+    .aes-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .button-primary { border-color: #4263eb; color: #fff; background: #4263eb; }
+    .button-primary:hover { border-color: #3451d1; background: #3451d1; }
     .button:disabled { cursor: not-allowed; opacity: .6; }
 
     footer { margin-top: 20px; color: var(--muted); font-size: 12px; line-height: 1.7; }
@@ -277,9 +282,10 @@
     [data-theme="dark"] .tool-link { color: #b7c4d6; }
     [data-theme="dark"] .tool-link:hover { background: #263345; }
     [data-theme="dark"] .tool-link[aria-current="page"] { color: #c3d0ff; background: #29385a; }
-    [data-theme="dark"] .coming-soon { color: #f0d496; background: #493c21; }
     [data-theme="dark"] .aes-label { color: #d7e1ee; }
     [data-theme="dark"] .aes-field { color: #c3d0e0; background: #141d29; }
+    [data-theme="dark"] .button-primary { border-color: #687fea; color: #fff; background: #425bc2; }
+    [data-theme="dark"] .button-primary:hover { background: #526bcf; }
 
     @media (max-width: 820px) {
       .shell { padding: 26px 18px 40px; }
@@ -404,53 +410,81 @@
         </div>
         <div class="tool-page" id="aes-page" hidden>
           <section class="intro">
-            <h1>AES 加解密</h1>
-            <p>加解密工具版面預覽。功能尚未實作，暫時無法輸入或處理資料。</p>
+            <h1>AES-CBC 加解密</h1>
+            <p>輸入內容、KEY 與 IV，使用瀏覽器在本機進行加密或解密。</p>
           </section>
-          <section class="workspace" aria-label="AES 加解密工具版面">
+          <section class="workspace" aria-label="AES 加解密工具">
             <section class="panel" aria-labelledby="aes-input-title">
               <div class="panel-heading">
                 <div>
                   <div class="panel-title" id="aes-input-title">輸入資料</div>
-                  <div class="panel-caption">設定加解密所需的資料</div>
+                  <div class="panel-caption">AES-CBC 加密模式</div>
                 </div>
-                <span class="coming-soon">規劃中</span>
               </div>
               <div class="aes-body">
-                <fieldset disabled>
-                  <label class="aes-label">操作方式
-                    <select class="aes-field"><option>待實作</option></select>
+                <div class="aes-fields">
+                  <label class="aes-label" for="aes-input">輸入內容
+                    <textarea id="aes-input" placeholder="加密時輸入 UTF-8 文字；解密時輸入密文" spellcheck="false"></textarea>
                   </label>
-                  <label class="aes-label">輸入內容
-                    <textarea placeholder="輸入要加密或解密的內容"></textarea>
+                  <div class="aes-label">
+                    <label for="aes-key">KEY</label>
+                    <div class="aes-encoding-row">
+                      <input class="aes-field" id="aes-key" type="text" placeholder="輸入 KEY" autocomplete="off" spellcheck="false">
+                      <select class="aes-field" id="aes-key-format" aria-label="KEY 編碼">
+                        <option value="utf8">UTF-8</option><option value="hex">Hex</option><option value="base64">Base64</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="aes-label">
+                    <label for="aes-iv">IV</label>
+                    <div class="aes-encoding-row">
+                      <input class="aes-field" id="aes-iv" type="text" placeholder="輸入 IV" autocomplete="off" spellcheck="false">
+                      <select class="aes-field" id="aes-iv-format" aria-label="IV 編碼">
+                        <option value="utf8">UTF-8</option><option value="hex">Hex</option><option value="base64">Base64</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label class="aes-label" for="aes-cipher-format">密文編碼
+                    <select class="aes-field" id="aes-cipher-format">
+                      <option value="base64">Base64</option><option value="base64url">Base64URL</option><option value="hex">Hex</option>
+                    </select>
                   </label>
-                  <label class="aes-label">密鑰
-                    <input class="aes-field" type="password" placeholder="輸入密鑰">
+                  <label class="aes-label" for="aes-padding">Padding
+                    <select class="aes-field" id="aes-padding">
+                      <option value="pkcs7">PKCS#7</option><option value="none">None（不填充）</option><option value="dotnet">.NET 相容（加密 PKCS#7／解密 None）</option>
+                    </select>
                   </label>
-                  <label class="aes-label">加密模式
-                    <select class="aes-field"><option>待確認</option></select>
-                  </label>
-                  <button class="button" type="button">執行</button>
-                </fieldset>
+                  <p class="aes-help">KEY 須為 16、24 或 32 bytes，IV 須為 16 bytes，以編碼後的長度計算。</p>
+                  <p class="aes-help">Base64 與 Base64URL 密文皆可直接解密；選擇 Base64URL 時，加密結果不含尾端的 =。</p>
+                  <p class="aes-help">None 不會新增或移除填充；加密時明文的 UTF-8 位元組長度必須是 16 的倍數。</p>
+                  <p class="aes-help">.NET 相容模式使用 PKCS#7 加密、None 解密；解密結果會保留填充字元。</p>
+                  <div class="aes-actions">
+                    <button class="button button-primary" id="aes-encrypt" type="button">加密</button>
+                    <button class="button" id="aes-decrypt" type="button">解密</button>
+                  </div>
+                  <p class="error" id="aes-error" role="status" aria-live="polite"></p>
+                </div>
               </div>
             </section>
             <section class="panel result-panel" aria-labelledby="aes-result-title">
               <div class="panel-heading">
                 <div>
                   <div class="panel-title" id="aes-result-title">處理結果</div>
-                  <div class="panel-caption">加密或解密後的內容</div>
+                  <div class="panel-caption">加密結果為密文，解密結果為 UTF-8 文字</div>
                 </div>
-                <button class="button" type="button" disabled>複製</button>
+                <button class="button" id="aes-copy" type="button" disabled>複製</button>
               </div>
-              <div class="output empty">功能完成後，結果會顯示在這裡</div>
+              <pre class="output empty" id="aes-output" aria-label="AES 處理結果">結果會顯示在這裡</pre>
             </section>
           </section>
-          <footer>此頁面僅供版面預覽，尚未提供 AES 加解密功能。</footer>
+          <footer><strong>安全提醒：</strong>加密時應使用每次全新且不可預測的 IV。CBC 不提供完整性驗證，無法保證密文未被修改或 KEY／IV 正確；新系統建議使用具驗證功能的加密模式。</footer>
         </div>
       </div>
     </div>
   </main>
 
+  <script src="vendor/aes-cbc.js"></script>
+  <script src="aes-crypto.js"></script>
   <script>
     const input = document.getElementById("log-input");
     const formattedOutput = document.getElementById("formatted-output");
@@ -727,6 +761,87 @@
       temporary.remove();
       if (!copied) throw new Error("Clipboard copy failed");
     }
+
+    const aesInput = document.getElementById("aes-input");
+    const aesKey = document.getElementById("aes-key");
+    const aesIv = document.getElementById("aes-iv");
+    const aesKeyFormat = document.getElementById("aes-key-format");
+    const aesIvFormat = document.getElementById("aes-iv-format");
+    const aesCipherFormat = document.getElementById("aes-cipher-format");
+    const aesPadding = document.getElementById("aes-padding");
+    const aesEncrypt = document.getElementById("aes-encrypt");
+    const aesDecrypt = document.getElementById("aes-decrypt");
+    const aesCopy = document.getElementById("aes-copy");
+    const aesOutput = document.getElementById("aes-output");
+    const aesError = document.getElementById("aes-error");
+    let aesResult = "";
+    let aesRevision = 0;
+    let aesBusy = false;
+
+    function invalidateAesResult() {
+      aesRevision++;
+      aesResult = "";
+      aesOutput.textContent = "結果會顯示在這裡";
+      aesOutput.classList.add("empty");
+      aesCopy.disabled = true;
+      aesError.textContent = "";
+    }
+
+    [aesInput, aesKey, aesIv, aesKeyFormat, aesIvFormat, aesCipherFormat, aesPadding].forEach((field) => {
+      field.addEventListener("input", invalidateAesResult);
+    });
+
+    async function processAes(operation) {
+      if (aesBusy) return;
+      invalidateAesResult();
+      const revision = aesRevision;
+      aesBusy = true;
+      aesEncrypt.disabled = true;
+      aesDecrypt.disabled = true;
+      try {
+        if (!window.isSecureContext || !window.crypto || !window.crypto.subtle) {
+          throw new Error("此功能需要支援 Web Crypto 的安全環境，請使用 HTTPS 或 localhost。");
+        }
+        if (!window.lumatekAesCrypto) {
+          throw new Error("AES 工具程式載入失敗，請確認網站檔案完整。");
+        }
+        const text = await window.lumatekAesCrypto.transformAes({
+          operation,
+          input: aesInput.value,
+          key: aesKey.value,
+          keyFormat: aesKeyFormat.value,
+          iv: aesIv.value,
+          ivFormat: aesIvFormat.value,
+          cipherFormat: aesCipherFormat.value,
+          padding: aesPadding.value
+        });
+        if (revision !== aesRevision) return;
+        aesResult = text;
+        setOutput(aesOutput, text === "" ? "（空字串）" : text);
+        aesCopy.disabled = false;
+      } catch (error) {
+        if (revision !== aesRevision) return;
+        aesError.textContent = error.name === "OperationError"
+          ? "加解密失敗，請檢查 KEY、IV、密文及 PKCS#7 padding。"
+          : error instanceof Error ? error.message : "加解密失敗，請檢查輸入內容。";
+      } finally {
+        aesBusy = false;
+        aesEncrypt.disabled = false;
+        aesDecrypt.disabled = false;
+      }
+    }
+
+    aesEncrypt.addEventListener("click", () => { processAes("encrypt"); });
+    aesDecrypt.addEventListener("click", () => { processAes("decrypt"); });
+    aesCopy.addEventListener("click", async () => {
+      try {
+        await copyText(aesResult);
+        aesCopy.textContent = "已複製";
+        window.setTimeout(() => { aesCopy.textContent = "複製"; }, 1400);
+      } catch (error) {
+        aesError.textContent = "無法複製，請手動選取內容複製。";
+      }
+    });
 
     copyButtons.forEach((button) => {
       button.addEventListener("click", async () => {
