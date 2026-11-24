@@ -1,6 +1,34 @@
 import { PDFDocument } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 
+export function characterAt(layout, point) {
+  const hit = layout.charAt(point);
+  const hitRun = layout.runs.find((run) => hit !== null && hit >= run.start && hit < run.start + run.glyphs.length);
+  if (hitRun && !('rotation' in hitRun)) return hit;
+
+  let closest = null;
+  let closestDistance = Infinity;
+  for (const run of layout.runs) {
+    if ('rotation' in run) continue;
+    for (let i = 0; i < run.glyphs.length; i++) {
+      const glyph = run.glyphs[i];
+      if (glyph.empty) continue;
+      const box = glyph.loose;
+      if (point.x < box.x || point.x > box.x + box.width ||
+          point.y < box.y || point.y > box.y + box.height) continue;
+      const target = glyph.tight || box;
+      const dx = Math.max(target.x - point.x, 0, point.x - target.x - target.width);
+      const dy = Math.max(target.y - point.y, 0, point.y - target.y - target.height);
+      const distance = dx * dx + dy * dy;
+      if (distance < closestDistance) {
+        closest = run.start + i;
+        closestDistance = distance;
+      }
+    }
+  }
+  return closest === null ? hit : closest;
+}
+
 export function selectionAt(layout, character) {
   const line = layout.lineAt(character);
   if (!line) return null;
