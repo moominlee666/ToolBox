@@ -1,0 +1,14 @@
+{
+  "name": "lumatek-toolbox",
+  "private": true,
+  "scripts": {
+    "build:aes": "esbuild aes-cbc.js --bundle --format=iife --minify --legal-comments=inline --outdir=vendor",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@noble/ciphers": "2.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

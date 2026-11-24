@@ -1,6 +1,6 @@
 # Lumatek
 
-在瀏覽器中使用的靜態工具箱。目前提供 Log 整理工具，AES 加解密頁面則僅供版面預覽，功能尚未實作。
+在瀏覽器中使用的靜態工具箱，提供 Log 整理與 AES-CBC 加解密工具。
 
 ## 使用方式
 
@@ -11,6 +11,20 @@
 格式化 JSON 保留原始資料。遮罩後的 Log 會辨識名稱包含 `key`、`token`、`secret`、`password`、`passwd`、`authorization`、`cookie` 或 `session` 的欄位。較長的字串會保留首尾各兩個字元；`uid`、`player_id` 和 `player_name` 不會遮罩。
 
 **分享前請自行檢查**：其他名稱或格式的敏感資料可能不會被辨識，遮罩也不會完全隱藏較長的值。
+
+## AES-CBC 加解密
+
+在 AES 頁面輸入內容、KEY、IV，選擇各自的編碼及 padding，再點選加密或解密。明文使用 UTF-8，密文支援 Base64、Base64URL 或 Hex；KEY 與 IV 支援 UTF-8、Hex 或 Base64。Base64 輸入也接受 Base64URL 字元及省略的尾端 `=`；選擇 Base64URL 時，加密結果不含尾端 `=`。KEY 必須為 16、24 或 32 bytes，IV 必須為 16 bytes。
+
+Padding 可選 PKCS#7（預設）或 None。None 不新增或移除任何填充，加密明文的 UTF-8 位元組長度必須是 16 的倍數；解密時保留所有字元，無效的 UTF-8 序列會以替代字元顯示，與 .NET 的 `Encoding.UTF8.GetString` 預設行為一致。
+
+另有 .NET 相容選項：加密使用 PKCS#7，解密使用 None，對應 `Aes.Create()` 的預設加密及 `PaddingMode.None` 解密。解密結果會保留填充字元；若要輸出不含尾端 `=` 的密文，請選擇 Base64URL。
+
+加密與解密在本機處理，不會上傳內容。PKCS#7 的 AES-128 和 AES-256 使用瀏覽器的 Web Crypto API；AES-192 和 None padding 使用本機打包的 `@noble/ciphers`，以相容瀏覽器的限制。此功能需要安全環境，例如 HTTPS、localhost 或支援的本機檔案頁面。UTF-8 KEY 會直接編碼為位元組，不會進行密碼衍生。
+
+加密時應使用每次全新且不可預測的 IV。AES-CBC 不提供資料完整性驗證，無法保證密文未被修改或 KEY／IV 正確；新系統建議選用具驗證功能的加密模式。
+
+部署時須一併上傳 `aes-crypto.js` 及 `vendor` 目錄。AES-192 相容程式已打包在 `vendor` 中；若需重新打包，可執行 `npm install` 和 `npm run build:aes`，並以 `npm test` 執行測試。套件授權見 `vendor/NOBLE-CIPHERS-LICENSE.txt`。
 
 ## 部署到 GitHub Pages
 

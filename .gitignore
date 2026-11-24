@@ -1,6 +1,7 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
+node_modules/
 
 # Local logs and environment secrets
 *.log
