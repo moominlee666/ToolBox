@@ -1,5 +1,5 @@
 import { localEngine } from '@embedpdf/engine';
-import { prepareFont, replaceLine } from './core.js';
+import { prepareFont, replaceLine, selectionAt } from './core.js';
 
 const engine = localEngine({ defaultFallbackFonts: false });
 const fileInput = document.getElementById('edit-file');
@@ -48,7 +48,7 @@ function setBusy(value) {
 
 function clearSelection() {
   selection = null;
-  original.textContent = '點選預覽中的一行文字';
+  original.textContent = '點選預覽中的文字區段';
   replacement.value = '';
   highlight.hidden = true;
 }
@@ -77,7 +77,7 @@ async function changePage(delta) {
   try {
     index += delta;
     await showPage();
-    message.textContent = layout.charCount ? '點選預覽中的一行文字。' : '此頁沒有可選取的文字。';
+    message.textContent = layout.charCount ? '點選預覽中的文字區段。' : '此頁沒有可選取的文字。';
   } catch (error) {
     index = oldIndex;
     showError('無法顯示頁面', error);
@@ -126,7 +126,7 @@ fileInput.addEventListener('change', async () => {
     image.hidden = false;
     pageNumber.textContent = `第 1 / ${pages.length} 頁`;
     clearSelection();
-    message.textContent = layout.charCount ? '點選預覽中的一行文字。' : '此頁沒有可選取的文字；不支援掃描圖片。';
+    message.textContent = layout.charCount ? '點選預覽中的文字區段。' : '此頁沒有可選取的文字；不支援掃描圖片。';
   } catch (error) {
     if (opened) await opened.close();
     fileInput.value = '';
@@ -144,7 +144,7 @@ image.addEventListener('click', async (event) => {
     y: (event.clientY - rect.top) * rendered.height / rect.height,
   });
   const character = layout.charAt(point);
-  const range = character === null ? null : layout.lineAt(character);
+  const range = character === null ? null : selectionAt(layout, character);
   if (!range) {
     message.textContent = '此處沒有可選取的文字。';
     return;
@@ -165,7 +165,7 @@ image.addEventListener('click', async (event) => {
     highlight.style.width = `${box.width / rendered.width * 100}%`;
     highlight.style.height = `${box.height / rendered.height * 100}%`;
     highlight.hidden = false;
-    message.textContent = '已選取整行文字；請輸入新文字並確認修改。';
+    message.textContent = '已選取文字區段；請輸入新文字並確認修改。';
   } catch (error) {
     clearSelection();
     showError('無法選取文字', error);
@@ -192,7 +192,7 @@ async function loadFont() {
 
 apply.addEventListener('click', async () => {
   if (busy || !selection) return;
-  if (!window.confirm('將移除所選整行原文字。與文字重疊的圖片、線條、註解或欄位也可能被移除；新文字可能影響附近排版。確定要修改？')) return;
+  if (!window.confirm('將移除所選區段的原文字。與文字重疊的圖片、線條、註解或欄位也可能被移除；新文字可能影響附近排版。確定要修改？')) return;
   setBusy(true);
   let opened = null;
   try {
