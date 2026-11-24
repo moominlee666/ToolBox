@@ -291,6 +291,15 @@
     [data-theme="dark"] .pdf-upload:hover, [data-theme="dark"] .pdf-upload.dragging,
     [data-theme="dark"] .pdf-upload.has-file, [data-theme="dark"] .pdf-layout:has(input:checked) { background: #29385a; }
 
+    .edit-body { display: grid; gap: 16px; padding: 18px; }
+    .edit-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .edit-preview-wrap { position: relative; width: min(100%, 800px); margin: 0 auto; line-height: 0; }
+    .edit-preview { display: block; width: 100%; height: auto; cursor: crosshair; }
+    .edit-preview[hidden], .edit-highlight[hidden] { display: none; }
+    .edit-highlight { position: absolute; border: 2px solid #4263eb; background: rgb(66 99 235 / 20%); pointer-events: none; }
+    .edit-original { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+    .edit-font-size { max-width: 100px; }
+
     footer { margin-top: 20px; color: var(--muted); font-size: 12px; line-height: 1.7; }
     footer strong { color: #59677b; }
 
@@ -394,6 +403,9 @@
           </a>
           <a class="tool-link" href="#pdf" data-page="pdf">
             <span class="tool-link-icon" aria-hidden="true">▤</span>PDF 保護
+          </a>
+          <a class="tool-link" href="#pdf-edit" data-page="pdf-edit">
+            <span class="tool-link-icon" aria-hidden="true">✎</span>PDF 文字編輯
           </a>
         </nav>
       </aside>
@@ -692,6 +704,50 @@
           </section>
           <footer><strong>提醒：</strong>浮水印可被移除或複製，並非安全保護；ZIP 本身不加密。已加密的 PDF 請先解除密碼。</footer>
         </div>
+        <div class="tool-page" id="pdf-edit-page" hidden>
+          <section class="intro">
+            <h1>PDF 文字編輯</h1>
+            <p>選擇可選取文字的 PDF，點選預覽中的一行文字進行修改。檔案只在瀏覽器本機處理。</p>
+          </section>
+          <section class="panel" aria-labelledby="edit-title">
+            <div class="panel-heading">
+              <div>
+                <div class="panel-title" id="edit-title">編輯 PDF</div>
+                <div class="panel-caption">每次修改一行；不支援掃描圖片或直排文字</div>
+              </div>
+            </div>
+            <div class="edit-body">
+              <label class="md5-label" for="edit-file">選擇 PDF 檔案
+                <input class="md5-field" id="edit-file" type="file" accept=".pdf,application/pdf" disabled>
+              </label>
+              <p class="pdf-hint" id="edit-file-name"></p>
+              <div class="edit-controls">
+                <button class="button" type="button" id="edit-previous" disabled>上一頁</button>
+                <span class="pdf-hint" id="edit-page-number">尚未選擇 PDF</span>
+                <button class="button" type="button" id="edit-next" disabled>下一頁</button>
+              </div>
+              <div class="edit-preview-wrap">
+                <img class="edit-preview" id="edit-preview" alt="PDF 頁面預覽，點選要編輯的文字" hidden>
+                <span class="edit-highlight" id="edit-highlight" hidden></span>
+              </div>
+              <div class="md5-label">選取的原文字
+                <pre class="edit-original" id="edit-original">點選預覽中的一行文字</pre>
+              </div>
+              <label class="md5-label" for="edit-replacement">新文字
+                <input class="md5-field" id="edit-replacement" type="text" disabled>
+              </label>
+              <label class="md5-label" for="edit-font-size">字體大小
+                <input class="md5-field edit-font-size" id="edit-font-size" type="number" min="4" max="96" step="1" value="12" disabled>
+              </label>
+              <div class="edit-controls">
+                <button class="button button-primary" id="edit-apply" type="button" disabled>確認修改</button>
+                <button class="button" id="edit-download" type="button" disabled>下載 PDF</button>
+              </div>
+              <p class="pdf-message" id="edit-message" role="status" aria-live="polite"></p>
+            </div>
+          </section>
+          <footer><strong>提醒：</strong>修改會移除所選行的原文字，並以其他字型重新寫入；可能影響重疊的圖形、圖片與註解。請保留原始檔並檢查下載結果。</footer>
+        </div>
       </div>
     </div>
   </main>
@@ -709,10 +765,11 @@
     const copyButtons = document.querySelectorAll(".copy-button");
     const themeButton = document.getElementById("theme-button");
     const themeStatus = document.getElementById("theme-status");
+    let editLoading = false;
 
     function showPage() {
       const requestedPage = window.location.hash.slice(1);
-      const page = ["log", "aes", "md5", "pdf"].includes(requestedPage) ? requestedPage : "log";
+      const page = ["log", "aes", "md5", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
       document.querySelectorAll(".tool-page").forEach((section) => {
         section.hidden = section.id !== page + "-page";
       });
@@ -723,6 +780,20 @@
           link.removeAttribute("aria-current");
         }
       });
+      if (page === "pdf-edit" && !editLoading) {
+        editLoading = true;
+        const editMessage = document.getElementById("edit-message");
+        if (location.protocol === "file:") {
+          editMessage.textContent = "PDF 文字編輯請透過 HTTPS 或 localhost 開啟。";
+          document.getElementById("edit-file").disabled = true;
+        } else {
+          import("./pdf-lock/assets/pdf-edit.js").catch((error) => {
+            console.error("PDF 文字編輯程式載入失敗：", error);
+            editMessage.textContent = "PDF 文字編輯程式載入失敗，請確認網站檔案完整。";
+            document.getElementById("edit-file").disabled = true;
+          });
+        }
+      }
     }
 
     window.addEventListener("hashchange", showPage);

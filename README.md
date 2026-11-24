@@ -1,6 +1,6 @@
 # Lumatek
 
-在瀏覽器中使用的靜態工具箱，提供 Log 整理、AES-CBC 加解密、MD5 Hash 及 PDF 保護工具。
+在瀏覽器中使用的靜態工具箱，提供 Log 整理、AES-CBC 加解密、MD5 Hash、PDF 保護及 PDF 文字編輯工具。
 
 ## 使用方式
 
@@ -43,6 +43,18 @@ Padding 可選 PKCS#7（預設）或 None。None 不新增或移除任何填充�
 本機若已安裝 Python，可在專案根目錄執行 `python -m http.server 8000 --bind 127.0.0.1`，再開啟 `http://localhost:8000`。
 
 部署時須上傳 `pdf-lock/assets`。重新建置需要 Node.js 24，執行 `npm install`、`npm run build:pdf` 與 `npm test`；套件授權見 `pdf-lock/licenses`。
+
+## PDF 文字編輯
+
+選擇可選取文字的 PDF，在頁面預覽中點選要修改的整行，輸入新文字並確認修改；可以調整字體大小。留空新文字可刪除該行。修改後檢查預覽，再下載新的 PDF；原始檔案不會被覆寫。
+
+工具會移除所選行的原文，再寫入新文字並完整重存，而不是只用色塊遮蓋。每次修改前會確認：重疊的圖片、線條、註解或表單欄位也可能被移除，新文字的字型、顏色與排版可能和原文不同。請保留原始檔，並檢查輸出。PDF 其他位置或中繼資料可能另有相同文字，不能將此功能視為完整敏感資料清除工具。
+
+目前僅支援可選取、水平且由左至右的單行文字；不支援掃描圖片或直排文字，部分受密碼或數位簽章保護的文件可能無法修改。資料在瀏覽器本機處理；此功能須透過 HTTPS 或 localhost 開啟。
+
+部署時須上傳 `pdf-lock/assets` 和 `pdf-edit/NotoSansTC.ttf`；重新建置使用 `npm run build:pdf`。PDF 引擎與字型授權檔位於 `pdf-edit`。
+
+PDF 編輯引擎目前依賴受 [Zod 記憶體耗盡問題](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)影響的版本；處理不受信任的文件可能導致瀏覽器工作程序耗盡記憶體。上游尚未提供相容的修正版本，請避免開啟不受信任的 PDF。
 
 ## 部署到 GitHub Pages
 

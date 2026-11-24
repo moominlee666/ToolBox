@@ -8,8 +8,11 @@ export default defineConfig({
     emptyOutDir: true,
     assetsInlineLimit: 0,
     rollupOptions: {
-      input: fileURLToPath(new URL('./src/main.js', import.meta.url)),
-      output: { entryFileNames: 'pdf-lock.js' },
+      input: {
+        'pdf-lock': fileURLToPath(new URL('./src/main.js', import.meta.url)),
+        'pdf-edit': fileURLToPath(new URL('../pdf-edit/main.js', import.meta.url)),
+      },
+      output: { entryFileNames: '[name].js' },
     },
   },
 });
