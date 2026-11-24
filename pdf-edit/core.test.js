@@ -147,3 +147,41 @@ test('selects horizontal text where a diagonal watermark overlaps it', async () 
     await engine.destroy();
   }
 });
+
+test('writes the selected Public Sans weight and rejects unsupported characters', async () => {
+  const original = await PDFDocument.create();
+  original.addPage().drawText('Original', { x: 50, y: 400, size: 12 });
+  const bytes = await original.save();
+  const engine = localEngine({ defaultFallbackFonts: false, runtime: { prefer: 'wasm' } });
+  try {
+    const doc = await engine.open({ kind: 'bytes', bytes: bytes.slice() });
+    let selection;
+    try {
+      const { pages } = await doc.pages.list();
+      const page = doc.page(pages[0].ref);
+      const range = (await page.text.layout()).lineAt(0);
+      selection = { ...range, text: await page.text.slice(range) };
+    } finally {
+      await doc.close();
+    }
+    for (const [style, weight] of [['Regular', 400], ['Medium', 500], ['SemiBold', 600], ['Bold', 700]]) {
+      const fontBytes = await readFile(new URL(`./PublicSans-${style}.ttf`, import.meta.url));
+      const font = await prepareFont(engine, new Uint8Array(fontBytes), `public-${style}`, weight);
+      const output = await replaceLine(engine, bytes, 0, selection, 'Replacement', 12, font);
+      const saved = await engine.open({ kind: 'bytes', bytes: output.slice() });
+      try {
+        const { pages } = await saved.pages.list();
+        assert.match((await saved.page(pages[0].ref).text.get()).text, /Replacement/);
+        assert.ok((await saved.fonts.list()).fonts.some((entry) =>
+          entry.source === 'document' && entry.familyName === 'Public Sans' && entry.weight === weight));
+      } finally {
+        await saved.close();
+      }
+      if (style === 'Regular') {
+        await assert.rejects(replaceLine(engine, bytes, 0, selection, '中文', 12, font), /不支援/);
+      }
+    }
+  } finally {
+    await engine.destroy();
+  }
+});

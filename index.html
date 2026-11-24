@@ -736,6 +736,15 @@
               <label class="md5-label" for="edit-replacement">新文字
                 <input class="md5-field" id="edit-replacement" type="text" disabled>
               </label>
+              <label class="md5-label" for="edit-font">字型
+                <select class="md5-field" id="edit-font" disabled>
+                  <option value="noto">Noto Sans TC（支援繁體中文）</option>
+                  <option value="publicRegular">Public Sans（一般）</option>
+                  <option value="publicMedium">Public Sans（中等）</option>
+                  <option value="publicSemiBold">Public Sans（半粗）</option>
+                  <option value="publicBold">Public Sans（粗體）</option>
+                </select>
+              </label>
               <label class="md5-label" for="edit-font-size">字體大小
                 <input class="md5-field edit-font-size" id="edit-font-size" type="number" min="4" max="96" step="1" value="12" disabled>
               </label>
@@ -746,7 +755,7 @@
               <p class="pdf-message" id="edit-message" role="status" aria-live="polite"></p>
             </div>
           </section>
-          <footer><strong>提醒：</strong>修改會移除所選區段的原文字，並以其他字型重新寫入；可能影響重疊的圖形、圖片與註解。請保留原始檔並檢查下載結果。</footer>
+          <footer><strong>提醒：</strong>修改會移除所選區段的原文字，並以選定的字型重新寫入；可能影響重疊的圖形、圖片與註解。請保留原始檔並檢查下載結果。</footer>
         </div>
       </div>
     </div>
