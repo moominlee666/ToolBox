@@ -12,6 +12,7 @@ const next = document.getElementById('edit-next');
 const pageNumber = document.getElementById('edit-page-number');
 const original = document.getElementById('edit-original');
 const replacement = document.getElementById('edit-replacement');
+const fontChoice = document.getElementById('edit-font');
 const fontSize = document.getElementById('edit-font-size');
 const apply = document.getElementById('edit-apply');
 const download = document.getElementById('edit-download');
@@ -28,7 +29,14 @@ let name = '';
 let changed = false;
 let unsaved = false;
 let busy = false;
-let fontPromise = null;
+const fonts = {
+  noto: { file: 'NotoSansTC.ttf', key: 'lumatek-noto-tc' },
+  publicRegular: { file: 'PublicSans-Regular.ttf', key: 'lumatek-public-regular', weight: 400 },
+  publicMedium: { file: 'PublicSans-Medium.ttf', key: 'lumatek-public-medium', weight: 500 },
+  publicSemiBold: { file: 'PublicSans-SemiBold.ttf', key: 'lumatek-public-semibold', weight: 600 },
+  publicBold: { file: 'PublicSans-Bold.ttf', key: 'lumatek-public-bold', weight: 700 },
+};
+const fontPromises = new Map();
 
 function showError(prefix, error) {
   console.error(prefix, error);
@@ -41,6 +49,7 @@ function setBusy(value) {
   previous.disabled = value || !doc || index === 0;
   next.disabled = value || !doc || index >= pages.length - 1;
   replacement.disabled = value || !selection;
+  fontChoice.disabled = value || !selection;
   fontSize.disabled = value || !selection;
   apply.disabled = value || !selection;
   download.disabled = value || !changed;
@@ -174,18 +183,20 @@ image.addEventListener('click', async (event) => {
   }
 });
 
-async function loadFont() {
-  if (!fontPromise) {
-    fontPromise = (async () => {
-      const response = await fetch(new URL('pdf-edit/NotoSansTC.ttf', document.baseURI));
-      if (!response.ok) throw new Error(`無法載入中文字型（HTTP ${response.status}）。`);
-      return prepareFont(engine, new Uint8Array(await response.arrayBuffer()));
-    })();
+async function loadFont(choice) {
+  const spec = fonts[choice];
+  if (!spec) throw new Error('找不到所選字型。');
+  if (!fontPromises.has(choice)) {
+    fontPromises.set(choice, (async () => {
+      const response = await fetch(new URL(`pdf-edit/${spec.file}`, document.baseURI));
+      if (!response.ok) throw new Error(`無法載入所選字型（HTTP ${response.status}）。`);
+      return prepareFont(engine, new Uint8Array(await response.arrayBuffer()), spec.key, spec.weight);
+    })());
   }
   try {
-    return await fontPromise;
+    return await fontPromises.get(choice);
   } catch (error) {
-    fontPromise = null;
+    fontPromises.delete(choice);
     throw error;
   }
 }
@@ -197,7 +208,7 @@ apply.addEventListener('click', async () => {
   let opened = null;
   try {
     message.textContent = '正在修改 PDF…';
-    const font = await loadFont();
+    const font = await loadFont(fontChoice.value);
     const output = await replaceLine(engine, bytes, index, selection, replacement.value, Number(fontSize.value), font);
     opened = await engine.open({ kind: 'bytes', bytes: output.slice() });
     const newPages = (await opened.pages.list()).pages;

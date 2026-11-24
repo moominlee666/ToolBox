@@ -49,12 +49,12 @@ export function selectionAt(layout, character) {
   return { start, count: end - start };
 }
 
-export async function prepareFont(engine, bytes) {
+export async function prepareFont(engine, bytes, key = 'lumatek-noto-tc', weight) {
   const fontDocument = await PDFDocument.create();
   fontDocument.registerFontkit(fontkit);
-  const font = await fontDocument.embedFont(bytes.slice(), { subset: true });
-  await engine.fonts.register({ key: 'lumatek-noto-tc', data: bytes.slice() });
-  return font;
+  const metrics = await fontDocument.embedFont(bytes.slice(), { subset: true });
+  await engine.fonts.register({ key, weight, data: bytes.slice() });
+  return { key, metrics };
 }
 
 export async function replaceLine(engine, bytes, pageIndex, selection, replacement, fontSize, font) {
@@ -88,13 +88,13 @@ export async function replaceLine(engine, bytes, pageIndex, selection, replaceme
     }
     const rect = segment.rect;
     const availableWidth = pageInfo.size.width - rect.x;
-    const textWidth = replacement ? font.widthOfTextAtSize(replacement, fontSize) : 0;
+    const textWidth = replacement ? font.metrics.widthOfTextAtSize(replacement, fontSize) : 0;
     if (textWidth + 8 > availableWidth) {
       throw new Error('新文字超出頁面寬度，請縮小字體或縮短文字。');
     }
     if (replacement) {
       const { missingCharacters } = await doc.fonts.resolve({
-        runs: [{ text: replacement, fontFamily: 'lumatek-noto-tc' }],
+        runs: [{ text: replacement, fontFamily: font.key }],
       });
       if (missingCharacters.length) {
         throw new Error(`字型不支援這些字元：${missingCharacters.join(' ')}`);
@@ -110,7 +110,7 @@ export async function replaceLine(engine, bytes, pageIndex, selection, replaceme
         subtype: 'free-text',
         box: { x: rect.x, y: rect.y, width: Math.min(availableWidth, Math.max(rect.width, textWidth + 8)), height: Math.max(rect.height, fontSize * 1.6) },
         contents: replacement,
-        fontFamily: 'lumatek-noto-tc',
+        fontFamily: font.key,
         fontSize,
         strokeWidth: 0,
       });
