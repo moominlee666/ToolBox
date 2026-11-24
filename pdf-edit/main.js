@@ -1,5 +1,5 @@
 import { localEngine } from '@embedpdf/engine';
-import { prepareFont, replaceLine, selectionAt } from './core.js';
+import { characterAt, prepareFont, replaceLine, selectionAt } from './core.js';
 
 const engine = localEngine({ defaultFallbackFonts: false });
 const fileInput = document.getElementById('edit-file');
@@ -143,7 +143,7 @@ image.addEventListener('click', async (event) => {
     x: (event.clientX - rect.left) * rendered.width / rect.width,
     y: (event.clientY - rect.top) * rendered.height / rect.height,
   });
-  const character = layout.charAt(point);
+  const character = characterAt(layout, point);
   const range = character === null ? null : selectionAt(layout, character);
   if (!range) {
     message.textContent = '此處沒有可選取的文字。';

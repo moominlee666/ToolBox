@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, degrees } from 'pdf-lib';
 import { localEngine } from '@embedpdf/engine';
-import { prepareFont, replaceLine, selectionAt } from './core.js';
+import { characterAt, prepareFont, replaceLine, selectionAt } from './core.js';
 
 test('replaces page text and rewrites the PDF without losing other lines', async () => {
   const original = await PDFDocument.create();
@@ -96,6 +96,52 @@ test('selects and replaces a separated text segment without removing its neighbo
       assert.doesNotMatch(text, /https:\/\/example\.test/);
     } finally {
       await output.close();
+    }
+  } finally {
+    await engine.destroy();
+  }
+});
+
+test('selects horizontal text where a diagonal watermark overlaps it', async () => {
+  const original = await PDFDocument.create();
+  const page = original.addPage([600, 800]);
+  page.drawText('Text under watermark', { x: 150, y: 400, size: 14 });
+  page.drawText('WATERMARK', { x: 100, y: 320, size: 100, rotate: degrees(45), opacity: 0.25 });
+  const engine = localEngine({ defaultFallbackFonts: false, runtime: { prefer: 'wasm' } });
+  try {
+    const doc = await engine.open({ kind: 'bytes', bytes: await original.save() });
+    try {
+      const { pages } = await doc.pages.list();
+      const source = doc.page(pages[0].ref);
+      const layout = await source.text.layout();
+      const line = layout.lineAt(0);
+      let overlaps = 0;
+      for (let i = line.start; i < line.start + line.count; i++) {
+        const quad = layout.charQuad(i);
+        if (!quad) continue;
+        for (const x of [0.05, 0.5, 0.95]) {
+          for (const y of [0.05, 0.5, 0.95]) {
+            const point = {
+              x: quad.upperLeft.x + (quad.upperRight.x - quad.upperLeft.x) * x,
+              y: quad.upperLeft.y + (quad.lowerLeft.y - quad.upperLeft.y) * y,
+            };
+            const originalHit = layout.charAt(point);
+            if (originalHit === null || originalHit < line.start + line.count) continue;
+            overlaps++;
+            const hit = characterAt(layout, point);
+            assert.deepEqual(selectionAt(layout, hit), line);
+          }
+        }
+      }
+      assert.ok(overlaps > 0, 'fixture must contain points originally captured by the watermark');
+      const watermark = layout.charQuad(layout.charCount - 1);
+      const watermarkPoint = {
+        x: (watermark.upperLeft.x + watermark.lowerRight.x) / 2,
+        y: (watermark.upperLeft.y + watermark.lowerRight.y) / 2,
+      };
+      assert.ok(characterAt(layout, watermarkPoint) >= line.start + line.count);
+    } finally {
+      await doc.close();
     }
   } finally {
     await engine.destroy();
