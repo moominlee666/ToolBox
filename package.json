@@ -3,12 +3,21 @@
   "private": true,
   "scripts": {
     "build:aes": "esbuild aes-cbc.js --bundle --format=iife --minify --legal-comments=inline --outdir=vendor",
+    "build:md5": "esbuild md5-hash.js --bundle --format=iife --minify --legal-comments=inline --outdir=vendor",
+    "build:diff": "esbuild md5-diff.js --bundle --format=iife --minify --legal-comments=inline --outdir=vendor",
+    "build:pdf": "vite build --config pdf-lock/vite.config.js",
     "test": "node --test"
   },
   "dependencies": {
-    "@noble/ciphers": "2.4.0"
+    "@noble/ciphers": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "diff": "9.0.0",
+    "@mssio/qpdf-wasm": "1.1.0",
+    "fflate": "0.8.3",
+    "pdf-lib": "1.17.1"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "vite": "7.3.8"
   }
 }
