@@ -251,6 +251,37 @@
     .md5-results .output { white-space: pre-wrap; overflow-wrap: anywhere; }
     .base64-output, .json-escape-output, .url-output, .jwt-output { white-space: pre-wrap; overflow-wrap: anywhere; }
     .aes-body .jwt-json { min-height: 120px; }
+    .jwt-workspace { grid-template-columns: minmax(0, 1fr); }
+    .jwt-payload-field { display: grid; gap: 8px; min-width: 0; }
+    .jwt-payload-editor { position: relative; min-width: 0; }
+    .aes-body .jwt-payload-editor textarea {
+      height: 380px;
+      min-height: 300px;
+      font-weight: 400;
+      white-space: pre;
+      overflow-wrap: normal;
+    }
+    .jwt-payload-highlight {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      margin: 0;
+      padding: 14px;
+      border: 1px solid transparent;
+      color: #3a475c;
+      font: 400 12px/1.65 "Cascadia Code", Consolas, monospace;
+      white-space: pre;
+      tab-size: 2;
+      pointer-events: none;
+    }
+    .jwt-payload-highlight::after { content: " "; }
+    .jwt-payload-editor.highlighted textarea,
+    [data-theme="dark"] .jwt-payload-editor.highlighted textarea {
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      caret-color: #334155;
+    }
+    .jwt-payload-editor:not(.highlighted) .jwt-payload-highlight { display: none; }
     .jwt-verification { margin: 0; color: var(--muted); font-size: 12px; }
     .jwt-verification.error { color: #c2413b; }
     .jwt-verification.safe-note { color: #43835e; }
@@ -333,6 +364,12 @@
     [data-theme="dark"] .local-badge { border-color: #315746; color: #a5e0bb; background: #1c342b; }
     [data-theme="dark"] textarea { color: #e2e8f0; background: #141d29; }
     [data-theme="dark"] textarea:focus { border-color: #92a9ff; }
+    [data-theme="dark"] .jwt-payload-highlight { color: #d7e1ee; }
+    [data-theme="dark"] .jwt-payload-editor.highlighted textarea {
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      caret-color: #e2e8f0;
+    }
     [data-theme="dark"] .button { color: #d7e1ee; background: #263345; }
     [data-theme="dark"] .button:hover { border-color: #69798f; background: #34445a; }
     [data-theme="dark"] .error { color: #ff9a94; }
@@ -358,6 +395,15 @@
     [data-theme="dark"] .diff-removed { color: #ffd9d6; background: #773832; }
     [data-theme="dark"] .diff-added { color: #d3ffe1; background: #275b3c; }
     [data-theme="dark"] .button-primary { border-color: #687fea; color: #fff; background: #425bc2; }
+
+    @media (forced-colors: active) {
+      .jwt-payload-editor.highlighted textarea {
+        color: CanvasText;
+        -webkit-text-fill-color: CanvasText;
+        caret-color: CanvasText;
+      }
+      .jwt-payload-highlight { display: none; }
+    }
     [data-theme="dark"] .button-primary:hover { background: #526bcf; }
 
     @media (max-width: 820px) {
@@ -693,7 +739,7 @@
             <h1>JWT 解析與簽名</h1>
             <p>解析 JWT，編輯 Header 和 Payload，再以 HMAC 共用密鑰產生新的 token；資料只在瀏覽器本機處理。</p>
           </section>
-          <section class="workspace" aria-label="JWT 解析與簽名工具">
+          <section class="workspace jwt-workspace" aria-label="JWT 解析與簽名工具">
             <section class="panel" aria-labelledby="jwt-input-title">
               <div class="panel-heading">
                 <div>
@@ -710,9 +756,13 @@
                   <label class="aes-label" for="jwt-header">Header（JSON 物件，alg 決定簽名演算法）
                     <textarea id="jwt-header" class="jwt-json" spellcheck="false">{"alg":"HS256","typ":"JWT"}</textarea>
                   </label>
-                  <label class="aes-label" for="jwt-payload">Payload（JSON 物件）
-                    <textarea id="jwt-payload" class="jwt-json" spellcheck="false">{}</textarea>
-                  </label>
+                  <div class="jwt-payload-field">
+                    <label class="aes-label" for="jwt-payload">Payload（JSON 物件）</label>
+                    <div class="jwt-payload-editor" id="jwt-payload-editor">
+                      <textarea id="jwt-payload" spellcheck="false" wrap="off">{}</textarea>
+                      <pre class="jwt-payload-highlight" id="jwt-payload-highlight" aria-hidden="true"></pre>
+                    </div>
+                  </div>
                   <label class="aes-label" for="jwt-secret">HMAC 共用密鑰（UTF-8）
                     <input class="aes-field" id="jwt-secret" type="text" placeholder="輸入簽名密鑰" autocomplete="off" spellcheck="false">
                   </label>
@@ -1223,7 +1273,9 @@
         const span = document.createElement("span");
         const token = match[0];
         if (token[0] === '"') {
-          span.className = text[tokens.lastIndex] === ":" ? "json-key" : "json-string";
+          let next = tokens.lastIndex;
+          while (next < text.length && /[ \t\r\n]/.test(text[next])) next++;
+          span.className = text[next] === ":" ? "json-key" : "json-string";
         } else {
           span.className = /^(true|false|null)$/.test(token) ? "json-literal" : "json-number";
         }
@@ -1441,6 +1493,8 @@
     const jwtInput = document.getElementById("jwt-input");
     const jwtHeader = document.getElementById("jwt-header");
     const jwtPayload = document.getElementById("jwt-payload");
+    const jwtPayloadEditor = document.getElementById("jwt-payload-editor");
+    const jwtPayloadHighlight = document.getElementById("jwt-payload-highlight");
     const jwtSecret = document.getElementById("jwt-secret");
     const jwtSign = document.getElementById("jwt-sign");
     const jwtOutput = document.getElementById("jwt-output");
@@ -1451,6 +1505,39 @@
     let jwtRevision = 0;
     let jwtVerificationRevision = 0;
     let jwtBusy = false;
+    let jwtPayloadComposing = false;
+
+    function syncJwtPayloadScroll() {
+      jwtPayloadHighlight.style.width = (jwtPayload.clientWidth + 2) + "px";
+      jwtPayloadHighlight.style.height = (jwtPayload.clientHeight + 2) + "px";
+      jwtPayloadHighlight.scrollTop = jwtPayload.scrollTop;
+      jwtPayloadHighlight.scrollLeft = jwtPayload.scrollLeft;
+    }
+
+    function updateJwtPayloadHighlight() {
+      jwtPayloadHighlight.textContent = jwtPayload.value;
+      highlightJson(jwtPayloadHighlight);
+      jwtPayloadEditor.classList.toggle("highlighted", !jwtPayloadComposing);
+      syncJwtPayloadScroll();
+    }
+
+    jwtPayload.addEventListener("input", updateJwtPayloadHighlight);
+    jwtPayload.addEventListener("scroll", syncJwtPayloadScroll);
+    jwtPayload.addEventListener("compositionstart", () => {
+      jwtPayloadComposing = true;
+      jwtPayloadEditor.classList.remove("highlighted");
+    });
+    jwtPayload.addEventListener("compositionend", () => {
+      jwtPayloadComposing = false;
+      updateJwtPayloadHighlight();
+    });
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(syncJwtPayloadScroll).observe(jwtPayload);
+    } else {
+      window.addEventListener("resize", syncJwtPayloadScroll);
+    }
+    window.addEventListener("hashchange", syncJwtPayloadScroll);
+    updateJwtPayloadHighlight();
 
     function clearJwtResult() {
       jwtRevision++;
@@ -1506,6 +1593,7 @@
         const formattedPayload = window.lumatekJwt.formatPayload(parsed.payload);
         jwtHeader.value = parsed.header;
         jwtPayload.value = formattedPayload;
+        updateJwtPayloadHighlight();
       } catch (error) {
         jwtError.textContent = (error instanceof Error ? error.message : String(error)) + " 編輯內容保持不變。";
       }

@@ -44,7 +44,7 @@ Base64 是編碼而非加密，不能用來保護機密資料。部署時須上�
 
 ## JWT 解析與簽名
 
-貼上 JWT 並點選解析，即可編輯 Header 和 Payload；Payload 會自動縮排，保留數字及字串的原始內容，避免大整數失真。也可直接輸入兩個 JSON 物件。將 Header 的 `alg` 設為 `HS256`、`HS384` 或 `HS512`，輸入 UTF-8 共用密鑰後，即可簽名並複製新 token。縮排會改變 Payload 的空白，因此即使未修改資料，新 token 也可能與原始 token 不同。不支援非對稱簽名、`b64=false` 或 `crit` 擴充設定。
+貼上 JWT 並點選解析，即可編輯 Header 和 Payload；Payload 會自動縮排並顯示 JSON 語法顏色，保留數字及字串的原始內容，避免大整數失真。也可直接輸入兩個 JSON 物件。將 Header 的 `alg` 設為 `HS256`、`HS384` 或 `HS512`，輸入 UTF-8 共用密鑰後，即可簽名並複製新 token。縮排會改變 Payload 的空白，因此即使未修改資料，新 token 也可能與原始 token 不同。不支援非對稱簽名、`b64=false` 或 `crit` 擴充設定。
 
 輸入原始 JWT 與密鑰後會自動驗證原始 token 的 HMAC 簽章；簽章不符可能是密鑰錯誤或 token 已被更改。編輯 Header 和 Payload 不會改變原始 token 的驗證結果，仍可使用輸入的密鑰產生新 token。未輸入原始 token 時無法判斷密鑰是否正確。
 
