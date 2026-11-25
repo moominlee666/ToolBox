@@ -249,7 +249,8 @@
     .md5-results .result-panel { min-height: 135px; }
     .md5-fields[hidden], .md5-label[hidden], .md5-results .result-panel[hidden] { display: none; }
     .md5-results .output { white-space: pre-wrap; overflow-wrap: anywhere; }
-    .base64-output, .json-escape-output, .url-output { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .base64-output, .json-escape-output, .url-output, .jwt-output { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .aes-body .jwt-json { min-height: 120px; }
     .md5-comparison { padding: 16px 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
     .md5-comparison.match { color: #28734e; }
     .md5-comparison.mismatch { color: #b13d38; }
@@ -418,6 +419,9 @@
           </a>
           <a class="tool-link" href="#json-escape" data-page="json-escape">
             <span class="tool-link-icon" aria-hidden="true">\</span>JSON 跳脫／還原
+          </a>
+          <a class="tool-link" href="#jwt" data-page="jwt">
+            <span class="tool-link-icon" aria-hidden="true">JWT</span>JWT 工具
           </a>
           <a class="tool-link" href="#md5" data-page="md5">
             <span class="tool-link-icon" aria-hidden="true">#</span>MD5 Hash
@@ -678,6 +682,52 @@
               <pre class="output empty json-escape-output" id="json-escape-output" aria-label="JSON 跳脫或還原結果">結果會顯示在這裡</pre>
             </section>
           </section>
+        </div>
+        <div class="tool-page" id="jwt-page" hidden>
+          <section class="intro">
+            <h1>JWT 解析與簽名</h1>
+            <p>解析 JWT，編輯 Header 和 Payload，再以 HMAC 共用密鑰產生新的 token；資料只在瀏覽器本機處理。</p>
+          </section>
+          <section class="workspace" aria-label="JWT 解析與簽名工具">
+            <section class="panel" aria-labelledby="jwt-input-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="jwt-input-title">解析與編輯</div>
+                  <div class="panel-caption">解析不驗證簽章；簽名支援 HS256、HS384、HS512</div>
+                </div>
+              </div>
+              <div class="aes-body">
+                <div class="aes-fields">
+                  <label class="aes-label" for="jwt-input">原始 JWT（選填）
+                    <textarea id="jwt-input" class="jwt-json" placeholder="貼上 JWT 後點選解析" spellcheck="false"></textarea>
+                  </label>
+                  <div class="aes-actions"><button class="button" id="jwt-parse" type="button">解析 JWT</button></div>
+                  <label class="aes-label" for="jwt-header">Header（JSON 物件，alg 決定簽名演算法）
+                    <textarea id="jwt-header" class="jwt-json" spellcheck="false">{"alg":"HS256","typ":"JWT"}</textarea>
+                  </label>
+                  <label class="aes-label" for="jwt-payload">Payload（JSON 物件）
+                    <textarea id="jwt-payload" class="jwt-json" spellcheck="false">{}</textarea>
+                  </label>
+                  <label class="aes-label" for="jwt-secret">HMAC 共用密鑰（UTF-8）
+                    <input class="aes-field" id="jwt-secret" type="password" placeholder="輸入簽名密鑰" autocomplete="off" spellcheck="false">
+                  </label>
+                  <div class="aes-actions"><button class="button button-primary" id="jwt-sign" type="button">產生新 token</button></div>
+                  <p class="error" id="jwt-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+            </section>
+            <section class="panel result-panel" aria-labelledby="jwt-result-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="jwt-result-title">新 token</div>
+                  <div class="panel-caption">以目前的 Header、Payload 和密鑰簽名</div>
+                </div>
+                <button class="button" id="jwt-copy" type="button" disabled>複製</button>
+              </div>
+              <pre class="output empty jwt-output" id="jwt-output" aria-label="新 JWT">結果會顯示在這裡</pre>
+            </section>
+          </section>
+          <footer><strong>安全提醒：</strong>解析不會驗證原始 token 的簽章或有效期限，不能據此信任內容。JWT 內容可被讀取，請勿放入機密資料；密鑰應使用足夠長的隨機值並妥善保管。</footer>
         </div>
         <div class="tool-page" id="md5-page" hidden>
           <section class="intro">
@@ -957,6 +1007,7 @@
   <script src="aes-crypto.js?v=2"></script>
   <script src="base64-tool.js?v=2"></script>
   <script src="json-escape.js?v=1"></script>
+  <script src="jwt-tool.js?v=1"></script>
   <script src="vendor/md5-hash.js"></script>
   <script src="vendor/md5-diff.js?v=2"></script>
   <script src="password-generator.js"></script>
@@ -973,7 +1024,7 @@
 
     function showPage() {
       const requestedPage = window.location.hash.slice(1);
-      const page = ["log", "aes", "base64", "url", "json-escape", "md5", "password", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
+      const page = ["log", "aes", "base64", "url", "json-escape", "jwt", "md5", "password", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
       document.querySelectorAll(".tool-page").forEach((section) => {
         section.hidden = section.id !== page + "-page";
       });
@@ -1378,6 +1429,74 @@
         window.setTimeout(() => { jsonEscapeCopy.textContent = "複製"; }, 1400);
       } catch (error) {
         jsonEscapeError.textContent = "無法複製，請手動選取內容複製。";
+      }
+    });
+
+    const jwtInput = document.getElementById("jwt-input");
+    const jwtHeader = document.getElementById("jwt-header");
+    const jwtPayload = document.getElementById("jwt-payload");
+    const jwtSecret = document.getElementById("jwt-secret");
+    const jwtSign = document.getElementById("jwt-sign");
+    const jwtOutput = document.getElementById("jwt-output");
+    const jwtError = document.getElementById("jwt-error");
+    const jwtCopy = document.getElementById("jwt-copy");
+    let jwtResult = "";
+    let jwtRevision = 0;
+    let jwtBusy = false;
+
+    function clearJwtResult() {
+      jwtRevision++;
+      jwtResult = "";
+      jwtOutput.textContent = "結果會顯示在這裡";
+      jwtOutput.classList.add("empty");
+      jwtCopy.disabled = true;
+      jwtCopy.textContent = "複製";
+      jwtError.textContent = "";
+    }
+
+    [jwtInput, jwtHeader, jwtPayload, jwtSecret].forEach((field) => {
+      field.addEventListener("input", clearJwtResult);
+    });
+    document.getElementById("jwt-parse").addEventListener("click", () => {
+      clearJwtResult();
+      try {
+        if (!window.lumatekJwt) throw new Error("JWT 工具載入失敗，請確認網站檔案完整。");
+        const parsed = window.lumatekJwt.parse(jwtInput.value);
+        jwtHeader.value = parsed.header;
+        jwtPayload.value = parsed.payload;
+      } catch (error) {
+        jwtError.textContent = (error instanceof Error ? error.message : String(error)) + " 編輯內容保持不變。";
+      }
+    });
+    jwtSign.addEventListener("click", async () => {
+      if (jwtBusy) return;
+      clearJwtResult();
+      const revision = jwtRevision;
+      jwtBusy = true;
+      jwtSign.disabled = true;
+      try {
+        if (!window.lumatekJwt) throw new Error("JWT 工具載入失敗，請確認網站檔案完整。");
+        const result = await window.lumatekJwt.sign(jwtHeader.value, jwtPayload.value, jwtSecret.value);
+        if (revision !== jwtRevision) return;
+        jwtResult = result;
+        jwtOutput.textContent = result;
+        jwtOutput.classList.remove("empty");
+        jwtCopy.disabled = false;
+      } catch (error) {
+        if (revision === jwtRevision) jwtError.textContent = error instanceof Error ? error.message : String(error);
+      } finally {
+        jwtBusy = false;
+        jwtSign.disabled = false;
+      }
+    });
+    jwtCopy.addEventListener("click", async () => {
+      try {
+        await copyText(jwtResult);
+        jwtError.textContent = "";
+        jwtCopy.textContent = "已複製";
+        window.setTimeout(() => { jwtCopy.textContent = "複製"; }, 1400);
+      } catch (error) {
+        jwtError.textContent = "無法複製，請手動選取內容複製。";
       }
     });
 

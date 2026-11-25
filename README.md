@@ -1,6 +1,6 @@
 # Lumatek
 
-在瀏覽器中使用的靜態工具箱，提供 Log 整理、AES-CBC 加解密、Base64 編解碼、URL 編解碼、JSON 跳脫／還原、MD5 Hash、密碼產生器、PDF 保護及 PDF 文字編輯工具。
+在瀏覽器中使用的靜態工具箱，提供 Log 整理、AES-CBC 加解密、Base64 編解碼、URL 編解碼、JSON 跳脫／還原、JWT 工具、MD5 Hash、密碼產生器、PDF 保護及 PDF 文字編輯工具。
 
 ## 使用方式
 
@@ -41,6 +41,12 @@ Base64 是編碼而非加密，不能用來保護機密資料。部署時須上�
 輸入原始文字後點選「跳脫」，可將雙引號、反斜線及換行等字元轉成 JSON 字串內容；輸出不含外層雙引號。貼上不含外層雙引號的跳脫字串後點選「還原」，即可還原文字；格式無效時會顯示錯誤。結果可複製，資料只在瀏覽器本機處理。此工具處理文字，不會驗證或格式化 JSON 結構。
 
 部署時須上傳 `json-escape.js`。
+
+## JWT 解析與簽名
+
+貼上 JWT 並點選解析，即可編輯 Header 和 Payload；也可直接輸入兩個 JSON 物件。將 Header 的 `alg` 設為 `HS256`、`HS384` 或 `HS512`，輸入 UTF-8 共用密鑰後，即可簽名並複製新 token。編輯內容時保留 JSON 原文，避免大整數因重新格式化而失真。不支援非對稱簽名、`b64=false` 或 `crit` 擴充設定。
+
+**解析不會驗證原始 token 的簽章或有效期限**，也不會判定 token 是否可信。JWT 的 Header 和 Payload 並未加密，請勿存放機密資料；密鑰應使用足夠長的隨機值並妥善保管。密鑰及 token 僅在瀏覽器本機處理，簽名需要 Web Crypto 安全環境（HTTPS 或 localhost）。部署時須上傳 `jwt-tool.js` 和 `aes-crypto.js`。
 
 ## MD5 Hash
 
