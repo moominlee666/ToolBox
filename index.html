@@ -275,8 +275,7 @@
       pointer-events: none;
     }
     .jwt-payload-highlight::after { content: " "; }
-    .jwt-payload-editor.highlighted textarea,
-    [data-theme="dark"] .jwt-payload-editor.highlighted textarea {
+    .jwt-payload-editor.highlighted textarea {
       color: transparent;
       -webkit-text-fill-color: transparent;
       caret-color: #334155;
@@ -397,7 +396,8 @@
     [data-theme="dark"] .button-primary { border-color: #687fea; color: #fff; background: #425bc2; }
 
     @media (forced-colors: active) {
-      .jwt-payload-editor.highlighted textarea {
+      .jwt-payload-editor.highlighted textarea,
+      [data-theme="dark"] .jwt-payload-editor.highlighted textarea {
         color: CanvasText;
         -webkit-text-fill-color: CanvasText;
         caret-color: CanvasText;
