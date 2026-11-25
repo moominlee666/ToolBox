@@ -1,5 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
+import { readTextColor } from './color.js';
 
 export function characterAt(layout, point) {
   const hit = layout.charAt(point);
@@ -74,6 +75,10 @@ export async function replaceLine(engine, bytes, pageIndex, selection, replaceme
     if (!range || range.start !== selection.start || range.count !== selection.count) {
       throw new Error('所選文字已改變，請重新選取。');
     }
+    if (!Number.isInteger(selection.character) || selection.character < range.start ||
+        selection.character >= range.start + range.count) {
+      throw new Error('無法確認所選文字的顏色，請重新選取。');
+    }
     const text = await page.text.slice(range);
     if (text !== selection.text) throw new Error('所選文字已改變，請重新選取。');
     const segments = layout.segments(range);
@@ -100,6 +105,10 @@ export async function replaceLine(engine, bytes, pageIndex, selection, replaceme
         throw new Error(`字型不支援這些字元：${missingCharacters.join(' ')}`);
       }
     }
+    const color = replacement
+      ? await readTextColor(bytes, pageIndex, selection.character, layout.charCount,
+        await page.text.slice({ start: selection.character, count: 1 }))
+      : null;
     const mark = await page.annotations.create({ subtype: 'redact', quadPoints: [quad] });
     const applied = await doc.redaction.apply({ annotations: [mark.annotation.ref] });
     if (applied.results[0]?.status !== 'applied') {
@@ -112,6 +121,8 @@ export async function replaceLine(engine, bytes, pageIndex, selection, replaceme
         contents: replacement,
         fontFamily: font.key,
         fontSize,
+        fontColor: color.fontColor,
+        opacity: color.opacity,
         strokeWidth: 0,
       });
       if (meta.missingCharacters?.length) throw new Error('新文字包含字型不支援的字元。');
