@@ -300,6 +300,17 @@
     .edit-original { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
     .edit-font-size { max-width: 100px; }
 
+    .generator-settings { display: grid; gap: 16px; }
+    .generator-settings[hidden] { display: none; }
+    .generator-options { display: flex; flex-wrap: wrap; gap: 12px 18px; margin: 0; padding: 0; border: 0; }
+    .generator-options legend { margin-bottom: 10px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .generator-checkbox { display: inline-flex; align-items: center; gap: 6px; color: inherit; font-size: 13px; }
+    .generator-checkbox input { accent-color: #4263eb; }
+    .generator-results { display: grid; gap: 8px; padding: 16px 18px; }
+    .generator-result { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .generator-result code { flex: 1; min-width: 0; overflow-wrap: anywhere; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; }
+    .generator-empty { margin: 0; color: var(--muted); font-size: 13px; }
+
     footer { margin-top: 20px; color: var(--muted); font-size: 12px; line-height: 1.7; }
     footer strong { color: #59677b; }
 
@@ -400,6 +411,9 @@
           </a>
           <a class="tool-link" href="#md5" data-page="md5">
             <span class="tool-link-icon" aria-hidden="true">#</span>MD5 Hash
+          </a>
+          <a class="tool-link" href="#password" data-page="password">
+            <span class="tool-link-icon" aria-hidden="true">✱</span>密碼產生器
           </a>
           <a class="tool-link" href="#pdf" data-page="pdf">
             <span class="tool-link-icon" aria-hidden="true">▤</span>PDF 保護
@@ -621,6 +635,57 @@
           </section>
           <footer><strong>提醒：</strong>Hash 前字串包含輸入的 Agent Secret，複製或分享前請注意。MD5 不適合用於新系統的安全驗證或密碼儲存。</footer>
         </div>
+        <div class="tool-page" id="password-page" hidden>
+          <section class="intro">
+            <h1>密碼產生器</h1>
+            <p>在瀏覽器本機產生隨機密碼或 UUID，資料不會上傳。</p>
+          </section>
+          <section class="workspace" aria-label="密碼產生器">
+            <section class="panel" aria-labelledby="password-settings-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="password-settings-title">產生設定</div>
+                  <div class="panel-caption">使用安全隨機數</div>
+                </div>
+              </div>
+              <div class="md5-body">
+                <div class="md5-fields">
+                  <label class="generator-checkbox"><input type="checkbox" id="generator-uuid">產生 UUID</label>
+                  <div class="generator-settings" id="generator-password-settings">
+                    <label class="md5-label" for="generator-length">密碼長度（1–64）
+                      <input class="md5-field" type="number" id="generator-length" min="1" max="64" step="1" value="16">
+                    </label>
+                    <fieldset class="generator-options">
+                      <legend>字元類別（每組至少包含各一個）</legend>
+                      <label class="generator-checkbox"><input type="checkbox" value="uppercase" checked>大寫</label>
+                      <label class="generator-checkbox"><input type="checkbox" value="lowercase" checked>小寫</label>
+                      <label class="generator-checkbox"><input type="checkbox" value="digits" checked>數字</label>
+                      <label class="generator-checkbox"><input type="checkbox" value="symbols" checked>符號</label>
+                    </fieldset>
+                  </div>
+                  <label class="md5-label" for="generator-count">數量（1–200）
+                    <input class="md5-field" type="number" id="generator-count" min="1" max="200" step="1" value="1">
+                  </label>
+                  <div><button class="button button-primary" id="generator-generate" type="button">產生</button></div>
+                  <p class="error" id="generator-message" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+            </section>
+            <section class="panel" aria-labelledby="generator-result-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="generator-result-title">產生結果</div>
+                  <div class="panel-caption">每筆可單獨複製，也可一次複製全部</div>
+                </div>
+                <button class="button" id="generator-copy-all" type="button" disabled>複製全部</button>
+              </div>
+              <div class="generator-results" id="generator-results" aria-live="polite">
+                <p class="generator-empty">產生結果會顯示在這裡</p>
+              </div>
+            </section>
+          </section>
+          <footer><strong>提醒：</strong>產生的密碼可能留在剪貼簿中，請妥善保管。</footer>
+        </div>
         <div class="tool-page" id="pdf-page" hidden>
           <section class="intro">
             <h1>PDF 保護</h1>
@@ -766,6 +831,7 @@
   <script src="aes-crypto.js"></script>
   <script src="vendor/md5-hash.js"></script>
   <script src="vendor/md5-diff.js?v=2"></script>
+  <script src="password-generator.js"></script>
   <script type="module" src="pdf-lock/assets/pdf-lock.js" onerror="document.getElementById('message').textContent = location.protocol === 'file:' ? 'PDF 保護請透過 HTTPS 或 localhost 開啟，無法直接從檔案使用。' : 'PDF 工具程式載入失敗，請確認網站檔案完整。'; document.getElementById('submit-button').disabled = true"></script>
   <script>
     const input = document.getElementById("log-input");
@@ -779,7 +845,7 @@
 
     function showPage() {
       const requestedPage = window.location.hash.slice(1);
-      const page = ["log", "aes", "md5", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
+      const page = ["log", "aes", "md5", "password", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
       document.querySelectorAll(".tool-page").forEach((section) => {
         section.hidden = section.id !== page + "-page";
       });
@@ -1059,6 +1125,86 @@
       temporary.remove();
       if (!copied) throw new Error("Clipboard copy failed");
     }
+
+    const generatorUuid = document.getElementById("generator-uuid");
+    const generatorSettings = document.getElementById("generator-password-settings");
+    const generatorLength = document.getElementById("generator-length");
+    const generatorCount = document.getElementById("generator-count");
+    const generatorCategories = generatorSettings.querySelector("fieldset");
+    const generatorResults = document.getElementById("generator-results");
+    const generatorMessage = document.getElementById("generator-message");
+    const generatorCopyAll = document.getElementById("generator-copy-all");
+    let generatedValues = [];
+
+    function clearGeneratedValues() {
+      generatedValues = [];
+      generatorCopyAll.disabled = true;
+      generatorCopyAll.textContent = "複製全部";
+      const empty = document.createElement("p");
+      empty.className = "generator-empty";
+      empty.textContent = "產生結果會顯示在這裡";
+      generatorResults.replaceChildren(empty);
+      generatorMessage.textContent = "";
+    }
+
+    generatorUuid.addEventListener("change", () => {
+      const disabled = generatorUuid.checked;
+      generatorSettings.hidden = disabled;
+      generatorLength.disabled = disabled;
+      generatorCategories.disabled = disabled;
+      clearGeneratedValues();
+    });
+    [generatorLength, generatorCount, generatorCategories].forEach((element) => {
+      element.addEventListener("input", clearGeneratedValues);
+    });
+    document.getElementById("generator-generate").addEventListener("click", () => {
+      clearGeneratedValues();
+      try {
+        if (!window.lumatekPasswordGenerator) throw new Error("密碼產生器載入失敗，請確認網站檔案完整。");
+        generatedValues = window.lumatekPasswordGenerator.generate({
+          mode: generatorUuid.checked ? "uuid" : "password",
+          length: Number(generatorLength.value),
+          count: Number(generatorCount.value),
+          categories: Array.from(generatorCategories.querySelectorAll("input:checked"), (input) => input.value)
+        });
+        const rows = document.createDocumentFragment();
+        generatedValues.forEach((value, index) => {
+          const row = document.createElement("div");
+          row.className = "generator-result";
+          const text = document.createElement("code");
+          text.textContent = value;
+          const button = document.createElement("button");
+          button.className = "button";
+          button.type = "button";
+          button.textContent = "複製";
+          button.setAttribute("aria-label", `複製第 ${index + 1} 筆`);
+          button.addEventListener("click", async () => {
+            try {
+              await copyText(value);
+              button.textContent = "已複製";
+              window.setTimeout(() => { button.textContent = "複製"; }, 1400);
+            } catch (error) {
+              generatorMessage.textContent = "無法複製，請手動選取內容複製。";
+            }
+          });
+          row.append(text, button);
+          rows.appendChild(row);
+        });
+        generatorResults.replaceChildren(rows);
+        generatorCopyAll.disabled = false;
+      } catch (error) {
+        generatorMessage.textContent = error instanceof Error ? error.message : String(error);
+      }
+    });
+    generatorCopyAll.addEventListener("click", async () => {
+      try {
+        await copyText(generatedValues.join("\n"));
+        generatorCopyAll.textContent = "已複製";
+        window.setTimeout(() => { generatorCopyAll.textContent = "複製全部"; }, 1400);
+      } catch (error) {
+        generatorMessage.textContent = "無法複製，請手動選取內容複製。";
+      }
+    });
 
     const aesInput = document.getElementById("aes-input");
     const aesKey = document.getElementById("aes-key");
