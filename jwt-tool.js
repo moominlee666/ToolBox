@@ -21,6 +21,46 @@
     return value;
   }
 
+  function formatPayload(text) {
+    parseObject(text, "Payload");
+    let result = "";
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      if (inString) {
+        result += char;
+        if (escaped) escaped = false;
+        else if (char === "\\") escaped = true;
+        else if (char === '"') inString = false;
+      } else if (char === '"') {
+        result += char;
+        inString = true;
+      } else if (char === "{" || char === "[") {
+        let next = i + 1;
+        while (/[ \t\r\n]/.test(text[next] || "") && next < text.length) next++;
+        if (text[next] === (char === "{" ? "}" : "]")) {
+          result += char + text[next];
+          i = next;
+        } else {
+          depth++;
+          result += char + "\n" + "  ".repeat(depth);
+        }
+      } else if (char === "}" || char === "]") {
+        depth--;
+        result += "\n" + "  ".repeat(depth) + char;
+      } else if (char === ",") {
+        result += ",\n" + "  ".repeat(depth);
+      } else if (char === ":") {
+        result += ": ";
+      } else if (!/[ \t\r\n]/.test(char)) {
+        result += char;
+      }
+    }
+    return result;
+  }
+
   function decodePart(part, label) {
     if (!/^[A-Za-z0-9_-]+$/.test(part)) throw new Error(label + " 不是有效的 Base64URL。");
     const codec = codecs();
@@ -49,9 +89,7 @@
     return { header: decoded[0], payload: decoded[1] };
   }
 
-  async function sign(headerText, payloadText, secret) {
-    const header = parseObject(headerText, "Header");
-    parseObject(payloadText, "Payload");
+  function hmacHash(header) {
     const hashes = { HS256: "SHA-256", HS384: "SHA-384", HS512: "SHA-512" };
     if (typeof header.alg !== "string" || !Object.prototype.hasOwnProperty.call(hashes, header.alg)) {
       throw new Error("Header 的 alg 必須是 HS256、HS384 或 HS512。");
@@ -59,17 +97,37 @@
     if ((header.b64 !== undefined && header.b64 !== true) || header.crit !== undefined) {
       throw new Error("不支援 Header 中的 b64 設定或 crit 擴充設定。");
     }
+    return hashes[header.alg];
+  }
+
+  async function importKey(secret, hash, usage) {
     if (!secret) throw new Error("請輸入 HMAC 共用密鑰。");
-    if (!root.crypto || !root.crypto.subtle) throw new Error("簽名需要 Web Crypto，請使用 HTTPS 或 localhost。");
+    if (!root.crypto || !root.crypto.subtle) throw new Error("簽名與驗證需要 Web Crypto，請使用 HTTPS 或 localhost。");
+    return root.crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash }, false, [usage]);
+  }
+
+  async function verify(token, secret) {
+    const parsed = parse(token);
+    const hash = hmacHash(parseObject(parsed.header, "Header"));
+    const parts = token.trim().split(".");
+    if (!parts[2]) throw new Error("原始 JWT 沒有簽章，無法驗證。");
+    const signature = decodePart(parts[2], "Signature");
+    const key = await importKey(secret, hash, "verify");
+    return root.crypto.subtle.verify("HMAC", key, signature, new TextEncoder().encode(parts[0] + "." + parts[1]));
+  }
+
+  async function sign(headerText, payloadText, secret) {
+    const hash = hmacHash(parseObject(headerText, "Header"));
+    parseObject(payloadText, "Payload");
+    const key = await importKey(secret, hash, "sign");
     const codec = codecs();
     const encoder = new TextEncoder();
     const encodedHeader = codec.encodeBytes(encoder.encode(headerText), "base64url");
     const encodedPayload = codec.encodeBytes(encoder.encode(payloadText), "base64url");
     const signingInput = encodedHeader + "." + encodedPayload;
-    const key = await root.crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: hashes[header.alg] }, false, ["sign"]);
     const signature = await root.crypto.subtle.sign("HMAC", key, encoder.encode(signingInput));
     return signingInput + "." + codec.encodeBytes(new Uint8Array(signature), "base64url");
   }
 
-  root.lumatekJwt = { parse, sign };
+  root.lumatekJwt = { parse, sign, verify, formatPayload };
 })(globalThis);

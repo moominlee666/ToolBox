@@ -251,6 +251,9 @@
     .md5-results .output { white-space: pre-wrap; overflow-wrap: anywhere; }
     .base64-output, .json-escape-output, .url-output, .jwt-output { white-space: pre-wrap; overflow-wrap: anywhere; }
     .aes-body .jwt-json { min-height: 120px; }
+    .jwt-verification { margin: 0; color: var(--muted); font-size: 12px; }
+    .jwt-verification.error { color: #c2413b; }
+    .jwt-verification.safe-note { color: #43835e; }
     .md5-comparison { padding: 16px 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
     .md5-comparison.match { color: #28734e; }
     .md5-comparison.mismatch { color: #b13d38; }
@@ -333,6 +336,8 @@
     [data-theme="dark"] .button { color: #d7e1ee; background: #263345; }
     [data-theme="dark"] .button:hover { border-color: #69798f; background: #34445a; }
     [data-theme="dark"] .error { color: #ff9a94; }
+    [data-theme="dark"] .jwt-verification.error { color: #ff9a94; }
+    [data-theme="dark"] .jwt-verification.safe-note { color: #a5e0bb; }
     [data-theme="dark"] .result-icon { color: #c3d0e0; background: #344155; }
     [data-theme="dark"] .result-icon.safe { color: #a5e0bb; background: #244337; }
     [data-theme="dark"] .output { color: #d7e1ee; background: var(--surface); }
@@ -693,7 +698,7 @@
               <div class="panel-heading">
                 <div>
                   <div class="panel-title" id="jwt-input-title">解析與編輯</div>
-                  <div class="panel-caption">解析不驗證簽章；簽名支援 HS256、HS384、HS512</div>
+                  <div class="panel-caption">輸入原始 JWT 與密鑰後自動驗證簽章；支援 HS256、HS384、HS512</div>
                 </div>
               </div>
               <div class="aes-body">
@@ -709,8 +714,9 @@
                     <textarea id="jwt-payload" class="jwt-json" spellcheck="false">{}</textarea>
                   </label>
                   <label class="aes-label" for="jwt-secret">HMAC 共用密鑰（UTF-8）
-                    <input class="aes-field" id="jwt-secret" type="password" placeholder="輸入簽名密鑰" autocomplete="off" spellcheck="false">
+                    <input class="aes-field" id="jwt-secret" type="text" placeholder="輸入簽名密鑰" autocomplete="off" spellcheck="false">
                   </label>
+                  <p class="jwt-verification" id="jwt-verification" role="status" aria-live="polite">原始 JWT 簽章未驗證：請輸入原始 JWT 與密鑰。</p>
                   <div class="aes-actions"><button class="button button-primary" id="jwt-sign" type="button">產生新 token</button></div>
                   <p class="error" id="jwt-error" role="status" aria-live="polite"></p>
                 </div>
@@ -727,7 +733,7 @@
               <pre class="output empty jwt-output" id="jwt-output" aria-label="新 JWT">結果會顯示在這裡</pre>
             </section>
           </section>
-          <footer><strong>安全提醒：</strong>解析不會驗證原始 token 的簽章或有效期限，不能據此信任內容。JWT 內容可被讀取，請勿放入機密資料；密鑰應使用足夠長的隨機值並妥善保管。</footer>
+          <footer><strong>安全提醒：</strong>簽章驗證不檢查有效期限或其他聲明；未經完整驗證前不要信任內容。JWT 內容及畫面上的密鑰可被讀取，請勿放入機密資料並妥善保管密鑰。</footer>
         </div>
         <div class="tool-page" id="md5-page" hidden>
           <section class="intro">
@@ -1007,7 +1013,7 @@
   <script src="aes-crypto.js?v=2"></script>
   <script src="base64-tool.js?v=2"></script>
   <script src="json-escape.js?v=1"></script>
-  <script src="jwt-tool.js?v=1"></script>
+  <script src="jwt-tool.js?v=3"></script>
   <script src="vendor/md5-hash.js"></script>
   <script src="vendor/md5-diff.js?v=2"></script>
   <script src="password-generator.js"></script>
@@ -1440,8 +1446,10 @@
     const jwtOutput = document.getElementById("jwt-output");
     const jwtError = document.getElementById("jwt-error");
     const jwtCopy = document.getElementById("jwt-copy");
+    const jwtVerification = document.getElementById("jwt-verification");
     let jwtResult = "";
     let jwtRevision = 0;
+    let jwtVerificationRevision = 0;
     let jwtBusy = false;
 
     function clearJwtResult() {
@@ -1457,13 +1465,47 @@
     [jwtInput, jwtHeader, jwtPayload, jwtSecret].forEach((field) => {
       field.addEventListener("input", clearJwtResult);
     });
+    async function verifyOriginalJwt() {
+      const revision = ++jwtVerificationRevision;
+      jwtVerification.classList.remove("error", "safe-note");
+      if (!jwtInput.value.trim() || !jwtSecret.value) {
+        jwtVerification.textContent = "原始 JWT 簽章未驗證：請輸入原始 JWT 與密鑰。";
+        return;
+      }
+      jwtVerification.textContent = "正在驗證原始 JWT 簽章…";
+      try {
+        if (!window.lumatekJwt || typeof window.lumatekJwt.verify !== "function") {
+          throw new Error("JWT 驗證程式載入失敗或版本不一致，請重新整理頁面並確認網站檔案完整。");
+        }
+        const valid = await window.lumatekJwt.verify(jwtInput.value, jwtSecret.value);
+        if (revision !== jwtVerificationRevision) return;
+        if (valid) {
+          jwtVerification.classList.add("safe-note");
+          jwtVerification.textContent = "原始 JWT 簽章驗證通過；未檢查有效期限或其他聲明。";
+        } else {
+          jwtVerification.classList.add("error");
+          jwtVerification.textContent = "原始 JWT 簽章不符：密鑰可能錯誤，或 token 已被更改。";
+        }
+      } catch (error) {
+        if (revision !== jwtVerificationRevision) return;
+        jwtVerification.classList.add("error");
+        jwtVerification.textContent = "原始 JWT 無法驗證：" + (error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    [jwtInput, jwtSecret].forEach((field) => {
+      field.addEventListener("input", verifyOriginalJwt);
+    });
     document.getElementById("jwt-parse").addEventListener("click", () => {
       clearJwtResult();
       try {
-        if (!window.lumatekJwt) throw new Error("JWT 工具載入失敗，請確認網站檔案完整。");
+        if (!window.lumatekJwt || typeof window.lumatekJwt.formatPayload !== "function") {
+          throw new Error("JWT 工具載入失敗或版本不一致，請重新整理頁面並確認網站檔案完整。");
+        }
         const parsed = window.lumatekJwt.parse(jwtInput.value);
+        const formattedPayload = window.lumatekJwt.formatPayload(parsed.payload);
         jwtHeader.value = parsed.header;
-        jwtPayload.value = parsed.payload;
+        jwtPayload.value = formattedPayload;
       } catch (error) {
         jwtError.textContent = (error instanceof Error ? error.message : String(error)) + " 編輯內容保持不變。";
       }
