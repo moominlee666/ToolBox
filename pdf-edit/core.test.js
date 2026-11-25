@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { PDFDocument, degrees } from 'pdf-lib';
+import { PDFDocument, degrees, rgb, setTextRenderingMode, TextRenderingMode } from 'pdf-lib';
 import { localEngine } from '@embedpdf/engine';
 import { characterAt, prepareFont, replaceLine, selectionAt } from './core.js';
+import { readTextColor } from './color.js';
 
 test('replaces page text and rewrites the PDF without losing other lines', async () => {
   const original = await PDFDocument.create();
@@ -22,7 +23,7 @@ test('replaces page text and rewrites the PDF without losing other lines', async
     const text = await source.text.slice(range);
     assert.equal(text, 'Original sentence');
     await doc.close();
-    const selection = { ...range, text };
+    const selection = { ...range, text, character: range.start };
     const result = await replaceLine(engine, bytes, 0, selection, '繁體中文 New', 14, font);
     const output = await engine.open({ kind: 'bytes', bytes: result.slice() });
     try {
@@ -82,7 +83,7 @@ test('selects and replaces a separated text segment without removing its neighbo
       const text = await source.text.slice(second);
       assert.equal(text, 'https://example.test');
       assert.deepEqual(selectionAt(layout, second.start + second.count - 1), second);
-      selection = { ...second, text };
+      selection = { ...second, text, character: second.start };
     } finally {
       await doc.close();
     }
@@ -160,7 +161,7 @@ test('writes the selected Public Sans weight and rejects unsupported characters'
       const { pages } = await doc.pages.list();
       const page = doc.page(pages[0].ref);
       const range = (await page.text.layout()).lineAt(0);
-      selection = { ...range, text: await page.text.slice(range) };
+      selection = { ...range, text: await page.text.slice(range), character: range.start };
     } finally {
       await doc.close();
     }
@@ -181,6 +182,117 @@ test('writes the selected Public Sans weight and rejects unsupported characters'
         await assert.rejects(replaceLine(engine, bytes, 0, selection, '中文', 12, font), /不支援/);
       }
     }
+  } finally {
+    await engine.destroy();
+  }
+});
+
+test('preserves clicked text color and opacity after replacement', async () => {
+  const original = await PDFDocument.create();
+  const page = original.addPage();
+  page.drawText('Original', { x: 50, y: 400, size: 14, color: rgb(0.2, 0.4, 0.8), opacity: 0.6 });
+  const bytes = await original.save();
+  const engine = localEngine({ defaultFallbackFonts: false, runtime: { prefer: 'wasm' } });
+  try {
+    const font = await prepareFont(engine, new Uint8Array(await readFile(new URL('./NotoSansTC.ttf', import.meta.url))));
+    const doc = await engine.open({ kind: 'bytes', bytes: bytes.slice() });
+    let selection;
+    try {
+      const { pages } = await doc.pages.list();
+      const page = doc.page(pages[0].ref);
+      const range = (await page.text.layout()).lineAt(0);
+      selection = { ...range, text: await page.text.slice(range), character: range.start };
+    } finally {
+      await doc.close();
+    }
+    const output = await replaceLine(engine, bytes, 0, selection, 'Replacement', 14, font);
+    const saved = await engine.open({ kind: 'bytes', bytes: output.slice() });
+    try {
+      const { pages } = await saved.pages.list();
+      const page = saved.page(pages[0].ref);
+      const layout = await page.text.layout();
+      const range = layout.lineAt(0);
+      const text = await page.text.slice({ start: range.start, count: 1 });
+      assert.deepEqual(await readTextColor(output, 0, range.start, layout.charCount, text), {
+        fontColor: '#3366cc',
+        opacity: 0.6,
+      });
+    } finally {
+      await saved.close();
+    }
+    await assert.rejects(readTextColor(bytes, 0, 0, 999, 'O'), /重新選取/);
+  } finally {
+    await engine.destroy();
+  }
+});
+
+test('uses the clicked character color when a line contains multiple colors', async () => {
+  const original = await PDFDocument.create();
+  const page = original.addPage();
+  page.drawText('Red', { x: 50, y: 400, size: 14, color: rgb(1, 0, 0) });
+  page.drawText('Blue', { x: 72, y: 400, size: 14, color: rgb(0, 0, 1) });
+  const bytes = await original.save();
+  const engine = localEngine({ defaultFallbackFonts: false, runtime: { prefer: 'wasm' } });
+  try {
+    const font = await prepareFont(engine, new Uint8Array(await readFile(new URL('./NotoSansTC.ttf', import.meta.url))));
+    const doc = await engine.open({ kind: 'bytes', bytes: bytes.slice() });
+    let selection;
+    try {
+      const { pages } = await doc.pages.list();
+      const page = doc.page(pages[0].ref);
+      const layout = await page.text.layout();
+      let character = null;
+      for (let i = 0; i < layout.charCount; i++) {
+        if (await page.text.slice({ start: i, count: 1 }) === 'B') {
+          character = i;
+          break;
+        }
+      }
+      assert.notEqual(character, null);
+      const range = selectionAt(layout, character);
+      selection = { ...range, character, text: await page.text.slice(range) };
+    } finally {
+      await doc.close();
+    }
+    const output = await replaceLine(engine, bytes, 0, selection, 'Replacement', 14, font);
+    const saved = await engine.open({ kind: 'bytes', bytes: output.slice() });
+    try {
+      const { pages } = await saved.pages.list();
+      const page = saved.page(pages[0].ref);
+      const layout = await page.text.layout();
+      const range = layout.lineAt(0);
+      const text = await page.text.slice({ start: range.start, count: 1 });
+      assert.deepEqual(await readTextColor(output, 0, range.start, layout.charCount, text), {
+        fontColor: '#0000ff', opacity: 1,
+      });
+    } finally {
+      await saved.close();
+    }
+  } finally {
+    await engine.destroy();
+  }
+});
+
+test('rejects outlined text instead of silently applying the wrong color', async () => {
+  const original = await PDFDocument.create();
+  const page = original.addPage();
+  page.pushOperators(setTextRenderingMode(TextRenderingMode.Outline));
+  page.drawText('Outlined', { x: 50, y: 400, size: 14 });
+  const bytes = await original.save();
+  const engine = localEngine({ defaultFallbackFonts: false, runtime: { prefer: 'wasm' } });
+  try {
+    const font = await prepareFont(engine, new Uint8Array(await readFile(new URL('./NotoSansTC.ttf', import.meta.url))));
+    const doc = await engine.open({ kind: 'bytes', bytes: bytes.slice() });
+    let selection;
+    try {
+      const { pages } = await doc.pages.list();
+      const page = doc.page(pages[0].ref);
+      const range = (await page.text.layout()).lineAt(0);
+      selection = { ...range, text: await page.text.slice(range), character: range.start };
+    } finally {
+      await doc.close();
+    }
+    await assert.rejects(replaceLine(engine, bytes, 0, selection, 'Replacement', 14, font), /不支援自動套用顏色/);
   } finally {
     await engine.destroy();
   }

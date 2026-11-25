@@ -163,7 +163,7 @@ image.addEventListener('click', async (event) => {
     const text = await doc.page(pages[index].ref).text.slice(range);
     const segments = layout.segments(range);
     if (!text || segments.length !== 1) throw new Error('此段文字目前不支援編輯。');
-    selection = { ...range, text };
+    selection = { ...range, text, character };
     original.textContent = text;
     replacement.value = text;
     const run = layout.runs.find((item) => range.start >= item.start && range.start < item.start + item.glyphs.length);
