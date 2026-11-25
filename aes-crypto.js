@@ -88,5 +88,5 @@
     }
   }
 
-  root.lumatekAesCrypto = { transformAes };
+  root.lumatekAesCrypto = { transformAes, decodeBytes, encodeBytes };
 })(globalThis);

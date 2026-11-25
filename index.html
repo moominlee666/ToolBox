@@ -249,6 +249,7 @@
     .md5-results .result-panel { min-height: 135px; }
     .md5-fields[hidden], .md5-label[hidden], .md5-results .result-panel[hidden] { display: none; }
     .md5-results .output { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .base64-output { white-space: pre-wrap; overflow-wrap: anywhere; }
     .md5-comparison { padding: 16px 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
     .md5-comparison.match { color: #28734e; }
     .md5-comparison.mismatch { color: #b13d38; }
@@ -409,6 +410,9 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/></svg>
             </span>AES 加解密
           </a>
+          <a class="tool-link" href="#base64" data-page="base64">
+            <span class="tool-link-icon" aria-hidden="true">64</span>Base64 編解碼
+          </a>
           <a class="tool-link" href="#md5" data-page="md5">
             <span class="tool-link-icon" aria-hidden="true">#</span>MD5 Hash
           </a>
@@ -552,6 +556,45 @@
             </section>
           </section>
           <footer><strong>安全提醒：</strong>加密時應使用每次全新且不可預測的 IV。CBC 不提供完整性驗證，無法保證密文未被修改或 KEY／IV 正確；新系統建議使用具驗證功能的加密模式。</footer>
+        </div>
+        <div class="tool-page" id="base64-page" hidden>
+          <section class="intro">
+            <h1>Base64 編解碼</h1>
+            <p>在瀏覽器本機進行 UTF-8 文字與 Base64 的相互轉換，資料不會上傳。</p>
+          </section>
+          <section class="workspace" aria-label="Base64 編解碼工具">
+            <section class="panel" aria-labelledby="base64-input-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="base64-input-title">輸入內容</div>
+                  <div class="panel-caption">輸入文字編碼，或貼上 Base64 解碼</div>
+                </div>
+              </div>
+              <div class="aes-body">
+                <div class="aes-fields">
+                  <label class="aes-label" for="base64-input">文字或 Base64
+                    <textarea id="base64-input" placeholder="輸入要轉換的內容" spellcheck="false"></textarea>
+                  </label>
+                  <div class="aes-actions">
+                    <button class="button button-primary" id="base64-encode" type="button">編碼</button>
+                    <button class="button" id="base64-decode" type="button">解碼</button>
+                  </div>
+                  <p class="error" id="base64-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+            </section>
+            <section class="panel result-panel" aria-labelledby="base64-result-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="base64-result-title">轉換結果</div>
+                  <div class="panel-caption">編碼為標準 Base64，解碼為 UTF-8 文字</div>
+                </div>
+                <button class="button" id="base64-copy" type="button" disabled>複製</button>
+              </div>
+              <pre class="output empty base64-output" id="base64-output" aria-label="Base64 轉換結果">結果會顯示在這裡</pre>
+            </section>
+          </section>
+          <footer><strong>提醒：</strong>Base64 不是加密，任何人都可以解碼還原內容。</footer>
         </div>
         <div class="tool-page" id="md5-page" hidden>
           <section class="intro">
@@ -829,6 +872,7 @@
 
   <script src="vendor/aes-cbc.js"></script>
   <script src="aes-crypto.js"></script>
+  <script src="base64-tool.js"></script>
   <script src="vendor/md5-hash.js"></script>
   <script src="vendor/md5-diff.js?v=2"></script>
   <script src="password-generator.js"></script>
@@ -845,7 +889,7 @@
 
     function showPage() {
       const requestedPage = window.location.hash.slice(1);
-      const page = ["log", "aes", "md5", "password", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
+      const page = ["log", "aes", "base64", "md5", "password", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
       document.querySelectorAll(".tool-page").forEach((section) => {
         section.hidden = section.id !== page + "-page";
       });
@@ -1125,6 +1169,47 @@
       temporary.remove();
       if (!copied) throw new Error("Clipboard copy failed");
     }
+
+    const base64Input = document.getElementById("base64-input");
+    const base64Output = document.getElementById("base64-output");
+    const base64Error = document.getElementById("base64-error");
+    const base64Copy = document.getElementById("base64-copy");
+    let base64Result = "";
+
+    function clearBase64Result() {
+      base64Result = "";
+      base64Output.textContent = "結果會顯示在這裡";
+      base64Output.classList.add("empty");
+      base64Copy.disabled = true;
+      base64Copy.textContent = "複製";
+      base64Error.textContent = "";
+    }
+
+    function processBase64(operation) {
+      clearBase64Result();
+      try {
+        if (!window.lumatekBase64) throw new Error("Base64 工具載入失敗，請確認網站檔案完整。");
+        base64Result = window.lumatekBase64[operation](base64Input.value);
+        base64Output.textContent = base64Result;
+        base64Output.classList.remove("empty");
+        base64Copy.disabled = false;
+      } catch (error) {
+        base64Error.textContent = error instanceof Error ? error.message : String(error);
+      }
+    }
+
+    base64Input.addEventListener("input", clearBase64Result);
+    document.getElementById("base64-encode").addEventListener("click", () => { processBase64("encode"); });
+    document.getElementById("base64-decode").addEventListener("click", () => { processBase64("decode"); });
+    base64Copy.addEventListener("click", async () => {
+      try {
+        await copyText(base64Result);
+        base64Copy.textContent = "已複製";
+        window.setTimeout(() => { base64Copy.textContent = "複製"; }, 1400);
+      } catch (error) {
+        base64Error.textContent = "無法複製，請手動選取內容複製。";
+      }
+    });
 
     const generatorUuid = document.getElementById("generator-uuid");
     const generatorSettings = document.getElementById("generator-password-settings");

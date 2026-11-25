@@ -1,6 +1,6 @@
 # Lumatek
 
-在瀏覽器中使用的靜態工具箱，提供 Log 整理、AES-CBC 加解密、MD5 Hash、密碼產生器、PDF 保護及 PDF 文字編輯工具。
+在瀏覽器中使用的靜態工具箱，提供 Log 整理、AES-CBC 加解密、Base64 編解碼、MD5 Hash、密碼產生器、PDF 保護及 PDF 文字編輯工具。
 
 ## 使用方式
 
@@ -25,6 +25,12 @@ Padding 可選 PKCS#7（預設）或 None。None 不新增或移除任何填充�
 加密時應使用每次全新且不可預測的 IV。AES-CBC 不提供資料完整性驗證，無法保證密文未被修改或 KEY／IV 正確；新系統建議選用具驗證功能的加密模式。
 
 部署時須一併上傳 `aes-crypto.js` 及 `vendor` 目錄。AES-192 相容程式已打包在 `vendor` 中；若需重新打包，可執行 `npm install` 和 `npm run build:aes`，並以 `npm test` 執行測試。套件授權見 `vendor/NOBLE-CIPHERS-LICENSE.txt`。
+
+## Base64 編解碼
+
+輸入文字後點選「編碼」，或貼上 Base64 後點選「解碼」，結果可複製。文字以 UTF-8 處理；解碼支援 Base64URL、空白及省略尾端 `=`。無效的 Base64 或非 UTF-8 解碼結果會顯示錯誤。資料只在瀏覽器本機處理。
+
+Base64 是編碼而非加密，不能用來保護機密資料。部署時須上傳 `base64-tool.js` 和 `aes-crypto.js`。
 
 ## MD5 Hash
 
