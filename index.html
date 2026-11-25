@@ -249,7 +249,7 @@
     .md5-results .result-panel { min-height: 135px; }
     .md5-fields[hidden], .md5-label[hidden], .md5-results .result-panel[hidden] { display: none; }
     .md5-results .output { white-space: pre-wrap; overflow-wrap: anywhere; }
-    .base64-output, .json-escape-output { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .base64-output, .json-escape-output, .url-output { white-space: pre-wrap; overflow-wrap: anywhere; }
     .md5-comparison { padding: 16px 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
     .md5-comparison.match { color: #28734e; }
     .md5-comparison.mismatch { color: #b13d38; }
@@ -412,6 +412,9 @@
           </a>
           <a class="tool-link" href="#base64" data-page="base64">
             <span class="tool-link-icon" aria-hidden="true">64</span>Base64 編解碼
+          </a>
+          <a class="tool-link" href="#url" data-page="url">
+            <span class="tool-link-icon" aria-hidden="true">%</span>URL 編解碼
           </a>
           <a class="tool-link" href="#json-escape" data-page="json-escape">
             <span class="tool-link-icon" aria-hidden="true">\</span>JSON 跳脫／還原
@@ -598,6 +601,45 @@
             </section>
           </section>
           <footer><strong>提醒：</strong>Base64 不是加密，任何人都可以解碼還原內容。</footer>
+        </div>
+        <div class="tool-page" id="url-page" hidden>
+          <section class="intro">
+            <h1>URL 編解碼</h1>
+            <p>將文字轉換為網址參數編碼，或還原百分比編碼；資料只在瀏覽器本機處理。</p>
+          </section>
+          <section class="workspace" aria-label="URL 編解碼工具">
+            <section class="panel" aria-labelledby="url-input-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="url-input-title">輸入內容</div>
+                  <div class="panel-caption">輸入參數文字編碼，或貼上百分比編碼解碼</div>
+                </div>
+              </div>
+              <div class="aes-body">
+                <div class="aes-fields">
+                  <label class="aes-label" for="url-input">文字或 URL 編碼
+                    <textarea id="url-input" placeholder="輸入要轉換的內容" spellcheck="false"></textarea>
+                  </label>
+                  <div class="aes-actions">
+                    <button class="button button-primary" id="url-encode" type="button">編碼</button>
+                    <button class="button" id="url-decode" type="button">解碼</button>
+                  </div>
+                  <p class="error" id="url-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+            </section>
+            <section class="panel result-panel" aria-labelledby="url-result-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="url-result-title">轉換結果</div>
+                  <div class="panel-caption">以 UTF-8 處理；解碼時保留 +，不轉成空格</div>
+                </div>
+                <button class="button" id="url-copy" type="button" disabled>複製</button>
+              </div>
+              <pre class="output empty url-output" id="url-output" aria-label="URL 轉換結果">結果會顯示在這裡</pre>
+            </section>
+          </section>
+          <footer><strong>提醒：</strong>編碼適用於網址參數值；完整網址中的 <code>:</code>、<code>/</code>、<code>?</code> 等符號也會被編碼。</footer>
         </div>
         <div class="tool-page" id="json-escape-page" hidden>
           <section class="intro">
@@ -931,7 +973,7 @@
 
     function showPage() {
       const requestedPage = window.location.hash.slice(1);
-      const page = ["log", "aes", "base64", "json-escape", "md5", "password", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
+      const page = ["log", "aes", "base64", "url", "json-escape", "md5", "password", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
       document.querySelectorAll(".tool-page").forEach((section) => {
         section.hidden = section.id !== page + "-page";
       });
@@ -1250,6 +1292,50 @@
         window.setTimeout(() => { base64Copy.textContent = "複製"; }, 1400);
       } catch (error) {
         base64Error.textContent = "無法複製，請手動選取內容複製。";
+      }
+    });
+
+    const urlInput = document.getElementById("url-input");
+    const urlOutput = document.getElementById("url-output");
+    const urlError = document.getElementById("url-error");
+    const urlCopy = document.getElementById("url-copy");
+    let urlResult = "";
+
+    function clearUrlResult() {
+      urlResult = "";
+      urlOutput.textContent = "結果會顯示在這裡";
+      urlOutput.classList.add("empty");
+      urlCopy.disabled = true;
+      urlCopy.textContent = "複製";
+      urlError.textContent = "";
+    }
+
+    function processUrl(operation) {
+      clearUrlResult();
+      try {
+        urlResult = operation === "encode" ? encodeURIComponent(urlInput.value) : decodeURIComponent(urlInput.value);
+        urlOutput.textContent = urlResult;
+        urlOutput.classList.remove("empty");
+        urlCopy.disabled = false;
+      } catch (error) {
+        if (!(error instanceof URIError)) throw error;
+        urlError.textContent = operation === "decode"
+          ? "輸入包含無效的百分比編碼或 UTF-8，請檢查後重試。"
+          : "輸入包含無效的文字字元，無法編碼。";
+      }
+    }
+
+    urlInput.addEventListener("input", clearUrlResult);
+    document.getElementById("url-encode").addEventListener("click", () => { processUrl("encode"); });
+    document.getElementById("url-decode").addEventListener("click", () => { processUrl("decode"); });
+    urlCopy.addEventListener("click", async () => {
+      try {
+        await copyText(urlResult);
+        urlError.textContent = "";
+        urlCopy.textContent = "已複製";
+        window.setTimeout(() => { urlCopy.textContent = "複製"; }, 1400);
+      } catch (error) {
+        urlError.textContent = "無法複製，請手動選取內容複製。";
       }
     });
 
