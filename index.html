@@ -249,7 +249,7 @@
     .md5-results .result-panel { min-height: 135px; }
     .md5-fields[hidden], .md5-label[hidden], .md5-results .result-panel[hidden] { display: none; }
     .md5-results .output { white-space: pre-wrap; overflow-wrap: anywhere; }
-    .base64-output { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .base64-output, .json-escape-output { white-space: pre-wrap; overflow-wrap: anywhere; }
     .md5-comparison { padding: 16px 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
     .md5-comparison.match { color: #28734e; }
     .md5-comparison.mismatch { color: #b13d38; }
@@ -412,6 +412,9 @@
           </a>
           <a class="tool-link" href="#base64" data-page="base64">
             <span class="tool-link-icon" aria-hidden="true">64</span>Base64 編解碼
+          </a>
+          <a class="tool-link" href="#json-escape" data-page="json-escape">
+            <span class="tool-link-icon" aria-hidden="true">\</span>JSON 跳脫／還原
           </a>
           <a class="tool-link" href="#md5" data-page="md5">
             <span class="tool-link-icon" aria-hidden="true">#</span>MD5 Hash
@@ -595,6 +598,44 @@
             </section>
           </section>
           <footer><strong>提醒：</strong>Base64 不是加密，任何人都可以解碼還原內容。</footer>
+        </div>
+        <div class="tool-page" id="json-escape-page" hidden>
+          <section class="intro">
+            <h1>JSON 跳脫／還原</h1>
+            <p>將文字轉換為 JSON 字串內容，或還原跳脫字元；資料只在瀏覽器本機處理。</p>
+          </section>
+          <section class="workspace" aria-label="JSON 跳脫與還原工具">
+            <section class="panel" aria-labelledby="json-escape-input-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="json-escape-input-title">輸入內容</div>
+                  <div class="panel-caption">輸入原始文字或不含外層引號的 JSON 字串內容</div>
+                </div>
+              </div>
+              <div class="aes-body">
+                <div class="aes-fields">
+                  <label class="aes-label" for="json-escape-input">文字或跳脫字串
+                    <textarea id="json-escape-input" placeholder="輸入要轉換的內容" spellcheck="false"></textarea>
+                  </label>
+                  <div class="aes-actions">
+                    <button class="button button-primary" id="json-escape-encode" type="button">跳脫</button>
+                    <button class="button" id="json-escape-decode" type="button">還原</button>
+                  </div>
+                  <p class="error" id="json-escape-error" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+            </section>
+            <section class="panel result-panel" aria-labelledby="json-escape-result-title">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title" id="json-escape-result-title">轉換結果</div>
+                  <div class="panel-caption">跳脫結果不含外層雙引號</div>
+                </div>
+                <button class="button" id="json-escape-copy" type="button" disabled>複製</button>
+              </div>
+              <pre class="output empty json-escape-output" id="json-escape-output" aria-label="JSON 跳脫或還原結果">結果會顯示在這裡</pre>
+            </section>
+          </section>
         </div>
         <div class="tool-page" id="md5-page" hidden>
           <section class="intro">
@@ -873,6 +914,7 @@
   <script src="vendor/aes-cbc.js"></script>
   <script src="aes-crypto.js?v=2"></script>
   <script src="base64-tool.js?v=2"></script>
+  <script src="json-escape.js?v=1"></script>
   <script src="vendor/md5-hash.js"></script>
   <script src="vendor/md5-diff.js?v=2"></script>
   <script src="password-generator.js"></script>
@@ -889,7 +931,7 @@
 
     function showPage() {
       const requestedPage = window.location.hash.slice(1);
-      const page = ["log", "aes", "base64", "md5", "password", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
+      const page = ["log", "aes", "base64", "json-escape", "md5", "password", "pdf", "pdf-edit"].includes(requestedPage) ? requestedPage : "log";
       document.querySelectorAll(".tool-page").forEach((section) => {
         section.hidden = section.id !== page + "-page";
       });
@@ -1208,6 +1250,48 @@
         window.setTimeout(() => { base64Copy.textContent = "複製"; }, 1400);
       } catch (error) {
         base64Error.textContent = "無法複製，請手動選取內容複製。";
+      }
+    });
+
+    const jsonEscapeInput = document.getElementById("json-escape-input");
+    const jsonEscapeOutput = document.getElementById("json-escape-output");
+    const jsonEscapeError = document.getElementById("json-escape-error");
+    const jsonEscapeCopy = document.getElementById("json-escape-copy");
+    let jsonEscapeResult = "";
+
+    function clearJsonEscapeResult() {
+      jsonEscapeResult = "";
+      jsonEscapeOutput.textContent = "結果會顯示在這裡";
+      jsonEscapeOutput.classList.add("empty");
+      jsonEscapeCopy.disabled = true;
+      jsonEscapeCopy.textContent = "複製";
+      jsonEscapeError.textContent = "";
+    }
+
+    function processJsonEscape(operation) {
+      clearJsonEscapeResult();
+      try {
+        if (!window.lumatekJsonEscape) throw new Error("JSON 跳脫工具載入失敗，請確認網站檔案完整。");
+        jsonEscapeResult = window.lumatekJsonEscape[operation](jsonEscapeInput.value);
+        jsonEscapeOutput.textContent = jsonEscapeResult;
+        jsonEscapeOutput.classList.remove("empty");
+        jsonEscapeCopy.disabled = false;
+      } catch (error) {
+        jsonEscapeError.textContent = error instanceof Error ? error.message : String(error);
+      }
+    }
+
+    jsonEscapeInput.addEventListener("input", clearJsonEscapeResult);
+    document.getElementById("json-escape-encode").addEventListener("click", () => { processJsonEscape("escape"); });
+    document.getElementById("json-escape-decode").addEventListener("click", () => { processJsonEscape("unescape"); });
+    jsonEscapeCopy.addEventListener("click", async () => {
+      try {
+        await copyText(jsonEscapeResult);
+        jsonEscapeError.textContent = "";
+        jsonEscapeCopy.textContent = "已複製";
+        window.setTimeout(() => { jsonEscapeCopy.textContent = "複製"; }, 1400);
+      } catch (error) {
+        jsonEscapeError.textContent = "無法複製，請手動選取內容複製。";
       }
     });
 
