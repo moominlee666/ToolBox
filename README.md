@@ -1,6 +1,6 @@
 # Lumatek
 
-在瀏覽器中使用的靜態工具箱，提供 Log 整理、AES-CBC 加解密、MD5 Hash、PDF 保護及 PDF 文字編輯工具。
+在瀏覽器中使用的靜態工具箱，提供 Log 整理、AES-CBC 加解密、MD5 Hash、密碼產生器、PDF 保護及 PDF 文字編輯工具。
 
 ## 使用方式
 
@@ -33,6 +33,12 @@ Padding 可選 PKCS#7（預設）或 None。None 不新增或移除任何填充�
 也可切換至「純字串比對」，自行輸入 Hash 前字串與比對字串，不需要填寫 Request Data，也不計算 MD5。
 
 雜湊前字串包含輸入的 Agent Secret，分享時請留意。MD5 不適合新系統的安全驗證或密碼儲存。計算與比對在瀏覽器本機進行；部署時須上傳 `vendor/md5-hash.js` 和 `vendor/md5-diff.js`。可執行 `npm install`、`npm run build:md5` 和 `npm run build:diff` 重新打包，套件授權見 `vendor/NOBLE-HASHES-LICENSE.txt` 和 `vendor/DIFF-LICENSE.txt`。
+
+## 密碼產生器
+
+選擇長度（1–64）、數量（1–200）及字元類別後產生密碼，每組都至少包含每個勾選類別的一個字元。可選 UUID v4，此時只需設定數量。結果可逐筆或全部複製；資料在瀏覽器本機以安全隨機數產生，不會上傳。
+
+部署時須上傳 `password-generator.js`。若瀏覽器不支援安全隨機數，工具會顯示錯誤，不會改用不安全的隨機數。
 
 ## PDF 保護
 
