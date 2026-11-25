@@ -30,3 +30,16 @@ test("handles input larger than a single byte conversion chunk", () => {
   const text = "中文😀".repeat(10000);
   assert.equal(decode(encode(text)), text);
 });
+
+test("reports a missing or outdated AES dependency clearly", () => {
+  const original = globalThis.lumatekAesCrypto;
+  try {
+    for (const dependency of [undefined, { transformAes() {} }]) {
+      globalThis.lumatekAesCrypto = dependency;
+      assert.throws(() => encode("test"), /版本不一致/);
+      assert.throws(() => decode("dGVzdA=="), /版本不一致/);
+    }
+  } finally {
+    globalThis.lumatekAesCrypto = original;
+  }
+});
